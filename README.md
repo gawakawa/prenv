@@ -8,8 +8,8 @@ For each PR, provision an isolated, ephemeral preview environment on Google Clou
 
 ## Structure
 
-- `terraform/` — shared foundation: APIs, state bucket, Workload Identity Federation, deploy service account. Apply **once locally**.
-- `terraform/preview/` — per-PR preview environment: one Cloud Run service. Applied/destroyed automatically by GitHub Actions.
+- `terraform/shared/` — shared foundation: APIs, state bucket, Workload Identity Federation, deploy service account. Apply **once locally**.
+- `terraform/env/pr/` — per-PR preview environment: one Cloud Run service. Applied/destroyed automatically by GitHub Actions.
 - `.github/workflows/preview-deploy.yml` — deploys a preview when the `preview` label is added to a PR (and on each push while labeled).
 - `.github/workflows/preview-teardown.yml` — destroys the preview when the PR is closed.
 
@@ -18,7 +18,7 @@ For each PR, provision an isolated, ephemeral preview environment on Google Clou
 ### 1. Apply the foundation
 
 ```bash
-cd terraform
+cd terraform/shared
 cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars — set project_id, state_bucket_name, github_repository
 tofu init
@@ -43,7 +43,7 @@ In GitHub → Issues → Labels, create a label named `preview`.
 ## Usage
 
 Add the `preview` label to a PR. GitHub Actions will:
-1. Run `tofu apply` in `terraform/preview/` with state prefix `pr/<N>`.
+1. Run `tofu apply` in `terraform/env/pr/` with state prefix `pr/<N>`.
 2. Post the `*.run.app` preview URL as a PR comment.
 
 Close the PR or remove the `preview` label, and Actions tears the environment down automatically.
