@@ -2,7 +2,7 @@ name: "Preview – Deploy"
 
 on:
   pull_request:
-    types: [labeled, synchronize]
+    types: [labeled]
 
 concurrency:
   group: prenv-${{ github.event.pull_request.number }}
@@ -18,11 +18,7 @@ jobs:
     name: Deploy preview environment
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # On 'labeled': run only when the newly added label is 'preview'.
-    # On 'synchronize': run only when the PR already carries the 'preview' label.
-    if: >-
-      (github.event.action == 'labeled' && github.event.label.name == 'preview') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'preview'))
+    if: github.event.label.name == 'preview'
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
