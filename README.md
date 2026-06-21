@@ -45,4 +45,4 @@ Add the `preview` label to a PR. GitHub Actions will:
 1. Run `tofu apply` in `terraform/preview/` with state prefix `pr/<N>`.
 2. Post the `*.run.app` preview URL as a PR comment.
 
-Close the PR (or remove and re-add the label to redeploy) and Actions tears it down automatically.
+Close the PR or remove the `preview` label, and Actions tears the environment down automatically.

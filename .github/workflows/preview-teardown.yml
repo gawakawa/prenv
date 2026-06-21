@@ -2,7 +2,7 @@ name: "Preview – Teardown"
 
 on:
   pull_request:
-    types: [closed]
+    types: [closed, unlabeled]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -24,6 +24,14 @@ jobs:
     name: Tear down preview environment
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Only tear down PRs that actually had a preview:
+    # - closed: the PR still carries the 'preview' label
+    # - unlabeled: the 'preview' label was just removed
+    # - workflow_dispatch: explicit manual teardown
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')) ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -69,12 +77,12 @@ jobs:
         with:
           script: |
             const marker = '<!-- prenv-preview-url -->';
-            const comments = await github.rest.issues.listComments({
+            const comments = await github.paginate(github.rest.issues.listComments, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const existing = comments.data.find(c => c.body.includes(marker));
+            const existing = comments.find(c => c.body.includes(marker));
             if (existing) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
