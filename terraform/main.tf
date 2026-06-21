@@ -3,6 +3,7 @@ locals {
     "cloudresourcemanager.googleapis.com",
     "serviceusage.googleapis.com",
     "iam.googleapis.com",
+    "storage.googleapis.com",
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
   ]

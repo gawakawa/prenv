@@ -9,11 +9,7 @@ Shared foundation resources that must exist before any per-PR environment is pro
 
 ## Usage
 
-Copy `terraform.tfvars.example` to `terraform.tfvars` and fill in your values (already gitignored).
-
-### Phase 1 — initial apply (local backend)
-
-`backend "gcs"` in `versions.tf` must stay commented out for the first apply, because the state bucket doesn't exist yet.
+The GCS backend is already configured and committed in `versions.tf`, so state lives in `gs://gawakawa-prenv-tfstate` (prefix `bootstrap`). Copy `terraform.tfvars.example` to `terraform.tfvars` and fill in your values (already gitignored), then:
 
 ```bash
 cd terraform
@@ -21,15 +17,12 @@ tofu init
 tofu apply -var-file=terraform.tfvars
 ```
 
-### Phase 2 — migrate state to GCS
+## Re-bootstrapping from scratch
 
-Uncomment the `backend "gcs"` block in `versions.tf` and set `bucket` to the literal bucket name you just created (variable interpolation is not supported in backend blocks). Then:
+Only needed when the state bucket does not yet exist (a brand-new project). The bucket can't be created while the backend points at it, so bootstrap in two phases:
 
-```bash
-tofu init -migrate-state
-```
-
-Confirm the migration when prompted, then delete the local `terraform.tfstate`.
+1. Comment out the `backend "gcs"` block in `versions.tf`, then `tofu init` (local backend) and `tofu apply -var-file=terraform.tfvars` to create the bucket.
+2. Uncomment the `backend "gcs"` block and set `bucket` to the literal bucket name just created (variable interpolation is not supported in backend blocks), then `tofu init -migrate-state`. Confirm the migration, then delete the local `terraform.tfstate`.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
