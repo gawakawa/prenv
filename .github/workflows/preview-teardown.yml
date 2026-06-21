@@ -24,8 +24,8 @@ jobs:
     name: Tear down preview environment
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Only tear down PRs that actually had a preview:
-    # - closed: the PR still carries the 'preview' label
+    # Run teardown when:
+    # - closed: any PR close (tofu destroy is a no-op on empty state)
     # - unlabeled: the 'preview' label was just removed
     # - workflow_dispatch: explicit manual teardown
     if: >-
@@ -61,7 +61,9 @@ jobs:
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
-        run: tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
+        run: |
+          : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 2}"
+          tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
 
       - name: Terraform destroy
         working-directory: terraform/preview

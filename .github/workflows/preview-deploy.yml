@@ -45,7 +45,9 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
-        run: tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
+        run: |
+          : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 2}"
+          tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
 
       - name: Terraform apply
         working-directory: terraform/preview
