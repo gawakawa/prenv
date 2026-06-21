@@ -8,11 +8,8 @@ terraform {
     }
   }
 
-  # Phase 1: keep commented out, run `tofu init` with local backend.
-  # Phase 2: after first apply creates the bucket, uncomment and run `tofu init -migrate-state`.
-  #
-  # backend "gcs" {
-  #   bucket = "REPLACE_WITH_state_bucket_name"
-  #   prefix = "bootstrap"
-  # }
+  backend "gcs" {
+    bucket = "gawakawa-prenv-tfstate"
+    prefix = "bootstrap"
+  }
 }
