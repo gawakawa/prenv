@@ -4,13 +4,8 @@
 
 A Google Cloud version of the preview environment setup in [this blog post](https://www.m3tech.blog/entry/2026/06/16/153849).
 
-<!-- BEGIN_TF_DOCS -->
-<!-- END_TF_DOCS -->
+For each PR, provision an isolated, ephemeral preview environment on Google Cloud with Terraform + Cloud Run, then tear it down when the PR is closed.
 
-## Usage
+## Structure
 
-```hcl
-module "example" {
-  source = "./"
-}
-```
+- `terraform/` — shared foundation resources (enable APIs, create state bucket). Apply once manually.
