@@ -18,10 +18,10 @@ _: {
           files = "^terraform/[^/]+\\.tf$";
           pass_filenames = false;
         };
-        terraform-docs-preview = {
+        terraform-docs-pr = {
           enable = true;
-          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/preview";
-          files = "^terraform/preview/.*\\.tf$";
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr";
+          files = "^terraform/env/pr/.*\\.tf$";
           pass_filenames = false;
         };
         workflow-timeout = {

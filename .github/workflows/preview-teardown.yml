@@ -57,7 +57,7 @@ jobs:
         run: echo "number=${PR_FROM_EVENT:-$PR_FROM_INPUT}" >> "$GITHUB_OUTPUT"
 
       - name: Terraform init
-        working-directory: terraform/preview
+        working-directory: terraform/env/pr
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
@@ -66,7 +66,7 @@ jobs:
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
 
       - name: Terraform destroy
-        working-directory: terraform/preview
+        working-directory: terraform/env/pr
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ steps.pr.outputs.number }}

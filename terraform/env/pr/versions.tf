@@ -12,6 +12,6 @@ terraform {
   #   tofu init -backend-config="bucket=<state_bucket_name>" \
   #             -backend-config="prefix=pr/<PR_NUMBER>"
   # Variable interpolation is not supported in backend blocks.
-  # bucket must match var.state_bucket_name in the foundation (terraform/).
+  # bucket must match var.state_bucket_name in shared (terraform/shared).
   backend "gcs" {}
 }

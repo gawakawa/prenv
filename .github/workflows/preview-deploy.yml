@@ -41,7 +41,7 @@ jobs:
           tofu_wrapper: false
 
       - name: Terraform init
-        working-directory: terraform/preview
+        working-directory: terraform/env/pr
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
@@ -50,7 +50,7 @@ jobs:
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
 
       - name: Terraform apply
-        working-directory: terraform/preview
+        working-directory: terraform/env/pr
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ github.event.pull_request.number }}
@@ -58,7 +58,7 @@ jobs:
 
       - name: Get preview URL
         id: url
-        working-directory: terraform/preview
+        working-directory: terraform/env/pr
         run: echo "url=$(tofu output -raw url)" >> "$GITHUB_OUTPUT"
 
       - name: Comment preview URL on PR
