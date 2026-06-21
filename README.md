@@ -34,6 +34,7 @@ From the `tofu output` values, set these as **repository variables** (not secret
 | `WIF_PROVIDER` | `tofu output -raw wif_provider_name` |
 | `DEPLOY_SA` | `tofu output -raw deploy_service_account_email` |
 | `GCP_PROJECT_ID` | your Google Cloud project ID |
+| `GCS_BUCKET` | `tofu output -raw state_bucket_name` |
 
 ### 3. Create the `preview` label
 

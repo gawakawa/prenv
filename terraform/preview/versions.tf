@@ -8,10 +8,10 @@ terraform {
     }
   }
 
-  # prefix is NOT set here — it is supplied at init time via:
-  #   tofu init -backend-config="prefix=pr/<PR_NUMBER>"
+  # Neither bucket nor prefix is hardcoded here; both are supplied at init time:
+  #   tofu init -backend-config="bucket=<state_bucket_name>" \
+  #             -backend-config="prefix=pr/<PR_NUMBER>"
   # Variable interpolation is not supported in backend blocks.
-  backend "gcs" {
-    bucket = "gawakawa-prenv-tfstate"
-  }
+  # bucket must match var.state_bucket_name in the foundation (terraform/).
+  backend "gcs" {}
 }

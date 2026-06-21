@@ -30,7 +30,7 @@ jobs:
     # - workflow_dispatch: explicit manual teardown
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'preview')) ||
+      github.event.action == 'closed' ||
       (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
     steps:
       - name: Checkout
@@ -60,7 +60,8 @@ jobs:
         working-directory: terraform/preview
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: tofu init -backend-config="prefix=pr/${PR_NUMBER}"
+          GCS_BUCKET: ${{ vars.GCS_BUCKET }}
+        run: tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
 
       - name: Terraform destroy
         working-directory: terraform/preview
