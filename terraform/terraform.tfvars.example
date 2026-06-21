@@ -1,0 +1,3 @@
+project_id        = "my-project"
+region            = "asia-northeast1"
+state_bucket_name = "my-project-tfstate"
