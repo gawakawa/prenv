@@ -74,23 +74,9 @@ jobs:
 
       - name: Update PR comment
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
+          GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        with:
-          script: |
-            const marker = '<!-- prenv-preview-url -->';
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find(c => c.body.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body: `${marker}\n## ✅ Preview environment torn down\n\nPR #${process.env.PR_NUMBER} environment destroyed.`,
-              });
-            }
+        run: |
+          body=$(printf "## ✅ Preview environment torn down\n\nPR #%s environment destroyed.\n" "$PR_NUMBER")
+          gh pr comment "$PR_NUMBER" --edit-last --body "$body" || true
