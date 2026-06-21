@@ -12,10 +12,10 @@ _: {
           args = [ "--offline" ];
         };
         tflint.enable = true;
-        terraform-docs = {
+        terraform-docs-shared = {
           enable = true;
-          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform";
-          files = "^terraform/[^/]+\\.tf$";
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/shared";
+          files = "^terraform/shared/[^/]+\\.tf$";
           pass_filenames = false;
         };
         terraform-docs-pr = {

@@ -1,4 +1,4 @@
-# terraform
+# terraform/shared
 
 Shared foundation resources that must exist before any per-PR environment is provisioned.
 
@@ -15,7 +15,7 @@ Shared foundation resources that must exist before any per-PR environment is pro
 The GCS backend is already configured and committed in `versions.tf`, so state lives in `gs://gawakawa-prenv-tfstate` (prefix `bootstrap`). Copy `terraform.tfvars.example` to `terraform.tfvars` and fill in your values (already gitignored), then:
 
 ```bash
-cd terraform
+cd terraform/shared
 tofu init
 tofu apply -var-file=terraform.tfvars
 ```
