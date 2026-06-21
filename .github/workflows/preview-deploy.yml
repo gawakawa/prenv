@@ -1,0 +1,101 @@
+name: "Preview – Deploy"
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+
+concurrency:
+  group: prenv-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  deploy:
+    name: Deploy preview environment
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # On 'labeled': run only when the newly added label is 'preview'.
+    # On 'synchronize': run only when the PR already carries the 'preview' label.
+    if: >-
+      (github.event.action == 'labeled' && github.event.label.name == 'preview') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'preview'))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
+        with:
+          tofu_wrapper: false
+
+      - name: Terraform init
+        working-directory: terraform/preview
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: tofu init -backend-config="prefix=pr/${PR_NUMBER}"
+
+      - name: Terraform apply
+        working-directory: terraform/preview
+        env:
+          TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+          TF_VAR_pr_number: ${{ github.event.pull_request.number }}
+        run: tofu apply -auto-approve
+
+      - name: Get preview URL
+        id: url
+        working-directory: terraform/preview
+        run: echo "url=$(tofu output -raw url)" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PREVIEW_URL: ${{ steps.url.outputs.url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const marker = '<!-- prenv-preview-url -->';
+            const body = [
+              marker,
+              '## 🚀 Preview environment',
+              '',
+              `**URL:** ${process.env.PREVIEW_URL}`,
+              '',
+              `Deployed from commit \`${process.env.HEAD_SHA}\``,
+              '',
+              '> Remove the `preview` label or close the PR to tear down.',
+            ].join('\n');
+
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.data.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

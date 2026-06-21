@@ -2,3 +2,4 @@ project_id        = "my-project"
 region            = "asia-northeast1"
 # Must match the bucket literal in the backend "gcs" block of versions.tf (variable interpolation is not supported there).
 state_bucket_name = "my-project-tfstate"
+github_repository = "my-org/my-repo"
