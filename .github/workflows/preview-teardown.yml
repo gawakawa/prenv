@@ -53,8 +53,7 @@ jobs:
                     '.[] | select(.updated < $t) | .name' \
                 | sed -nE 's#^pr/([0-9]+)/.*#\1#p' \
                 | sort -u \
-                | jq -R . \
-                | jq -cs .
+                | jq -Rcs '[split("\n")[] | select(length > 0)]'
             )
           else
             pr="${PR_FROM_EVENT:-$PR_FROM_INPUT}"

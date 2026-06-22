@@ -46,6 +46,11 @@ jobs:
             echo "ref=${AR_REPO}/app:${HEAD_SHA}"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
+        with:
+          tofu_wrapper: false
+
       - name: Log in to Artifact Registry
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
@@ -59,11 +64,6 @@ jobs:
           context: app
           push: true
           tags: ${{ steps.image.outputs.ref }}
-
-      - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
-        with:
-          tofu_wrapper: false
 
       - name: Terraform init
         working-directory: terraform/env/pr/ephemeral
