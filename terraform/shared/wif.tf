@@ -63,3 +63,11 @@ resource "google_storage_bucket_iam_member" "deployer_tfstate" {
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.deployer.email}"
 }
+
+# Deploy SA needs to push Docker images to the preview Artifact Registry repo.
+# The repo lives in env/pr/base, so we grant project-level writer to avoid cross-module refs.
+resource "google_project_iam_member" "deployer_ar_writer" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.deployer.email}"
+}
