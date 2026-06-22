@@ -18,6 +18,12 @@ _: {
           files = "^terraform/shared/[^/]+\\.tf$";
           pass_filenames = false;
         };
+        terraform-docs-pr-base = {
+          enable = true;
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr/base";
+          files = "^terraform/env/pr/base/[^/]+\\.tf$";
+          pass_filenames = false;
+        };
         terraform-docs-pr-ephemeral = {
           enable = true;
           entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr/ephemeral";
