@@ -33,7 +33,7 @@ After applying, register the output as a GitHub Actions repository variable:
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_google"></a> [google](#provider\_google) | ~> 6.0 |
+| <a name="provider_google"></a> [google](#provider\_google) | 6.50.0 |
 
 ## Modules
 
@@ -44,11 +44,17 @@ No modules.
 | Name | Type |
 | ---- | ---- |
 | [google_artifact_registry_repository.preview](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository) | resource |
+| [google_secret_manager_secret.iap_oauth_client_id](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/secret_manager_secret) | resource |
+| [google_secret_manager_secret.iap_oauth_client_secret](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/secret_manager_secret) | resource |
+| [google_secret_manager_secret_version.iap_oauth_client_id](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/secret_manager_secret_version) | resource |
+| [google_secret_manager_secret_version.iap_oauth_client_secret](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/secret_manager_secret_version) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_iap_oauth_client_id"></a> [iap\_oauth\_client\_id](#input\_iap\_oauth\_client\_id) | IAP custom OAuth client ID (created manually in Console). Stored in Secret Manager and bound to IAP via `gcloud iap settings set`. | `string` | n/a | yes |
+| <a name="input_iap_oauth_client_secret"></a> [iap\_oauth\_client\_secret](#input\_iap\_oauth\_client\_secret) | IAP custom OAuth client secret (created manually in Console). | `string` | n/a | yes |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Google Cloud project ID. | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | Region for the Artifact Registry repository. | `string` | `"asia-northeast1"` | no |
 | <a name="input_repository_id"></a> [repository\_id](#input\_repository\_id) | Artifact Registry repository ID. Used as the Docker image repository name. | `string` | `"prenv-preview"` | no |

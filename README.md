@@ -20,21 +20,29 @@ For each PR, provision an isolated, ephemeral preview environment on Google Clou
 ### 1. Bootstrap IAP (manual — Console only)
 
 Preview environments are protected by [Identity-Aware Proxy (IAP)](https://cloud.google.com/iap/docs/enabling-cloud-run).
-For projects without a Google Cloud organization, the OAuth consent screen and IAP OAuth client
-must be created via the Console before Terraform can manage IAP:
+Projects without a Google Cloud organization cannot use the Google-managed IAP OAuth client and
+must create a custom one. IAP binding itself cannot be managed by Terraform under this constraint
+(`google_iap_settings` does not expose `client_id`/`client_secret`; `google_iap_brand` requires
+an org). These steps are one-time manual prerequisites.
 
 1. **Configure the OAuth consent screen**: Console → APIs & Services → OAuth consent screen.
-   Select **External**, fill in the required fields, and add your Google account email as a
-   **Test user**. Save and continue through all steps.
+   Select **External**, fill in required fields, and add your Google account as a **Test user**.
 
-2. **Bootstrap the IAP OAuth client**: Console → Security → Identity-Aware Proxy. Enable IAP
-   on any Cloud Run service (a temporary service is fine). This auto-creates the project-level
-   OAuth client and the IAP service agent
-   (`service-PROJECT_NUMBER@gcp-sa-iap.iam.gserviceaccount.com`). Both persist at the project
-   level after the service is deleted.
+2. **Create a custom OAuth client**: Console → APIs & Services → Credentials → Create credentials
+   → OAuth client ID → Web application. Under **Authorized redirect URIs**, add:
+   ```
+   https://iap.googleapis.com/v1/oauth/clientIds/<CLIENT_ID>:handleRedirect
+   ```
+   (Replace `<CLIENT_ID>` after you save — the ID appears in the credentials list.) Note the
+   **Client ID** and **Client secret** for use in `terraform/env/pr/base/terraform.tfvars`.
 
-3. **Do this before the first `tofu apply` of the ephemeral module** — Terraform's `iap_enabled`
-   reuses the project OAuth client created in step 2. Applying without it will fail.
+3. **Bootstrap the IAP service agent**: Console → Security → Identity-Aware Proxy. Toggle IAP on
+   for any Cloud Run service (a temporary one is fine). This creates the project-level IAP service
+   agent (`service-PROJECT_NUMBER@gcp-sa-iap.iam.gserviceaccount.com`) which persists after the
+   service is deleted.
+
+4. **Do this before the first `tofu apply` of the preview modules** — both the service agent
+   (step 3) and the OAuth binding (step 5 below) must exist before `iap_enabled = true` works.
 
 ### 2. Apply the shared foundation
 
@@ -53,12 +61,34 @@ environments, e.g. `iap_members = ["user:you@example.com"]`.
 
 ```bash
 cd terraform/env/pr/base
-# Reuse the same terraform.tfvars values (project_id is sufficient)
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars — set project_id, iap_oauth_client_id, iap_oauth_client_secret
 tofu init
-tofu apply -var project_id=<your-project-id>
+tofu apply
 ```
 
-### 4. Set GitHub Actions variables
+`terraform.tfvars` is gitignored. The `iap_oauth_client_id` and `iap_oauth_client_secret`
+values come from Console step 1.2 above. Applying stores them in Secret Manager.
+
+### 4. Bind the OAuth client to IAP (manual — once after step 3)
+
+`google_iap_settings` does not expose `client_id`/`client_secret`, so IAP binding stays manual.
+Create `iap_settings.yaml`:
+
+```yaml
+access_settings:
+  oauth_settings:
+    client_id: <CLIENT_ID>
+    client_secret: <CLIENT_SECRET>
+```
+
+Then apply:
+
+```bash
+gcloud iap settings set iap_settings.yaml --project=<project_id>
+```
+
+### 5. Set GitHub Actions variables
 
 Create a GitHub Actions Environment named **`pr`**: GitHub → Settings → Environments → New environment → name it `pr`.
 
@@ -74,7 +104,7 @@ From the `tofu output` values, add these as **Environment variables** inside the
 | `GCS_BUCKET` | `cd terraform/shared && tofu output -raw state_bucket_name` |
 | `AR_REPO` | `cd terraform/env/pr/base && tofu output -raw repository_url` |
 
-### 5. Create the `preview` label
+### 6. Create the `preview` label
 
 In GitHub → Issues → Labels, create a label named `preview`.
 

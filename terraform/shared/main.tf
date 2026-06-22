@@ -9,6 +9,7 @@ locals {
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
     "iap.googleapis.com",
+    "secretmanager.googleapis.com",
   ]
 }
 

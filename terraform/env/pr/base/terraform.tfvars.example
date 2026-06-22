@@ -1,0 +1,3 @@
+project_id              = "my-project"
+iap_oauth_client_id     = "PROJECT_NUMBER-xxxx.apps.googleusercontent.com"
+iap_oauth_client_secret = "GOCSPX-xxxx"
