@@ -43,7 +43,7 @@ resource "google_service_account_iam_member" "wif_deployer" {
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.github_repository}"
 }
 
-# Deploy SA needs to create/delete Cloud Run services and set their IAM (allUsers invoker).
+# Deploy SA needs to create/delete Cloud Run services and set their IAM (IAP service agent invoker).
 resource "google_project_iam_member" "deployer_run_admin" {
   project = var.project_id
   role    = "roles/run.admin"

@@ -10,7 +10,7 @@ terraform {
 
   # State is stored in the shared GCS bucket under prefix "env/pr/base".
   # This module is applied once manually (not by CI).
-  # bucket must match var.state_bucket_name in shared (terraform/shared).
+  # bucket must match var.state_bucket_name (managed in this module).
   backend "gcs" {
     bucket = "gawakawa-prenv-tfstate"
     prefix = "env/pr/base"

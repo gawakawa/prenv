@@ -23,6 +23,7 @@ jobs:
   discover:
     name: Discover environments to tear down
     runs-on: ubuntu-latest
+    environment: pr
     timeout-minutes: 5
     permissions:
       id-token: write # needed for WIF auth on schedule
@@ -44,7 +45,7 @@ jobs:
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
           if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
-            : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 3}"
+            : "${GCS_BUCKET:?GCS_BUCKET environment variable is not set — see README setup step 4}"
             THRESHOLD=$(date -u -d '3 days ago' '+%Y-%m-%dT%H:%M:%SZ')
             json=$(
               gcloud storage objects list "gs://${GCS_BUCKET}/pr/**" \
@@ -66,6 +67,7 @@ jobs:
     needs: discover
     if: needs.discover.outputs.prs != '[]'
     runs-on: ubuntu-latest
+    environment: pr
     timeout-minutes: 15
     permissions:
       id-token: write
@@ -102,7 +104,7 @@ jobs:
           PR_NUMBER: ${{ matrix.pr }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
-          : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 3}"
+          : "${GCS_BUCKET:?GCS_BUCKET environment variable is not set — see README setup step 4}"
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
 
       - name: Terraform destroy
@@ -111,7 +113,7 @@ jobs:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ matrix.pr }}
         run: |
-          : "${TF_VAR_project_id:?GCP_PROJECT_ID repository variable is not set — see README setup step 3}"
+          : "${TF_VAR_project_id:?GCP_PROJECT_ID environment variable is not set — see README setup step 4}"
           tofu destroy -auto-approve
 
       - name: Update PR comment
