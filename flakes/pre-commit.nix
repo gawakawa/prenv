@@ -12,16 +12,22 @@ _: {
           args = [ "--offline" ];
         };
         tflint.enable = true;
-        terraform-docs = {
+        terraform-docs-shared = {
           enable = true;
-          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform";
-          files = "^terraform/[^/]+\\.tf$";
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/shared";
+          files = "^terraform/shared/[^/]+\\.tf$";
           pass_filenames = false;
         };
-        terraform-docs-preview = {
+        terraform-docs-pr-base = {
           enable = true;
-          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/preview";
-          files = "^terraform/preview/.*\\.tf$";
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr/base";
+          files = "^terraform/env/pr/base/[^/]+\\.tf$";
+          pass_filenames = false;
+        };
+        terraform-docs-pr-ephemeral = {
+          enable = true;
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr/ephemeral";
+          files = "^terraform/env/pr/ephemeral/[^/]+\\.tf$";
           pass_filenames = false;
         };
         workflow-timeout = {

@@ -2,7 +2,7 @@ name: "Preview – Deploy"
 
 on:
   pull_request:
-    types: [labeled, synchronize]
+    types: [labeled]
 
 concurrency:
   group: prenv-${{ github.event.pull_request.number }}
@@ -18,47 +18,75 @@ jobs:
     name: Deploy preview environment
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # On 'labeled': run only when the newly added label is 'preview'.
-    # On 'synchronize': run only when the PR already carries the 'preview' label.
-    if: >-
-      (github.event.action == 'labeled' && github.event.label.name == 'preview') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'preview'))
+    if: github.event.label.name == 'preview'
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SA }}
+          token_format: access_token
+
+      - name: Resolve image reference
+        id: image
+        env:
+          AR_REPO: ${{ vars.AR_REPO }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          : "${AR_REPO:?AR_REPO repository variable is not set — see README setup step 3}"
+          {
+            echo "host=${AR_REPO%%/*}"
+            echo "ref=${AR_REPO}/app:${HEAD_SHA}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
         with:
           tofu_wrapper: false
 
+      - name: Log in to Artifact Registry
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ${{ steps.image.outputs.host }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
+        with:
+          context: app
+          push: true
+          tags: ${{ steps.image.outputs.ref }}
+
       - name: Terraform init
-        working-directory: terraform/preview
+        working-directory: terraform/env/pr/ephemeral
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
-          : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 2}"
+          : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 3}"
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
 
       - name: Terraform apply
-        working-directory: terraform/preview
+        working-directory: terraform/env/pr/ephemeral
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ github.event.pull_request.number }}
-        run: tofu apply -auto-approve
+          TF_VAR_image: ${{ steps.image.outputs.ref }}
+        run: |
+          : "${TF_VAR_project_id:?GCP_PROJECT_ID repository variable is not set — see README setup step 3}"
+          tofu apply -auto-approve
 
       - name: Get preview URL
         id: url
-        working-directory: terraform/preview
+        working-directory: terraform/env/pr/ephemeral
         run: echo "url=$(tofu output -raw url)" >> "$GITHUB_OUTPUT"
 
       - name: Comment preview URL on PR
@@ -68,5 +96,5 @@ jobs:
           PREVIEW_URL: ${{ steps.url.outputs.url }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          body=$(printf "## 🚀 Preview environment\n\n**URL:** %s\n\nDeployed from commit \`%s\`\n\n> Remove the \`preview\` label or close the PR to tear down.\n" "$PREVIEW_URL" "$HEAD_SHA")
+          body=$(printf "## 🚀 Preview environment\n\n**URL:** %s\n\nDeployed from commit \`%s\`\n\n> Close the PR to tear down (stale environments are also GC'd daily).\n" "$PREVIEW_URL" "$HEAD_SHA")
           gh pr comment "$PR_NUMBER" --edit-last --create-if-none --body "$body"

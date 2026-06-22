@@ -1,4 +1,4 @@
-# terraform/preview
+# terraform/env/pr/ephemeral
 
 Per-PR preview environment. Deploys one Cloud Run service (`prenv-pr-<N>`) per PR and makes it
 publicly accessible via its `.run.app` URL.

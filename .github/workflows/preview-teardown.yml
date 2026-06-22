@@ -2,7 +2,9 @@ name: "Preview – Teardown"
 
 on:
   pull_request:
-    types: [closed, unlabeled]
+    types: [closed]
+  schedule:
+    - cron: "0 20 * * *" # 05:00 JST daily
   workflow_dispatch:
     inputs:
       pr_number:
@@ -10,28 +12,73 @@ on:
         required: true
         type: string
 
-concurrency:
-  group: prenv-${{ github.event.pull_request.number || inputs.pr_number }}
-  cancel-in-progress: false
-
 permissions:
   contents: read
-  id-token: write
-  pull-requests: write
 
 jobs:
+  # Discover which PR environments to tear down and emit them as a JSON array.
+  # - closed / workflow_dispatch: emits a single-element array with the PR number.
+  # - schedule: lists stale ephemeral state objects (not updated in 3+ days) and
+  #   extracts the PR numbers. Requires Google Cloud auth.
+  discover:
+    name: Discover environments to tear down
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      id-token: write # needed for WIF auth on schedule
+    outputs:
+      prs: ${{ steps.prs.outputs.json }}
+    steps:
+      - name: Authenticate to Google Cloud
+        if: github.event_name == 'schedule'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+
+      - name: Resolve PR list
+        id: prs
+        env:
+          PR_FROM_EVENT: ${{ github.event.pull_request.number }}
+          PR_FROM_INPUT: ${{ inputs.pr_number }}
+          GCS_BUCKET: ${{ vars.GCS_BUCKET }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 3}"
+            THRESHOLD=$(date -u -d '3 days ago' '+%Y-%m-%dT%H:%M:%SZ')
+            json=$(
+              gcloud storage objects list "gs://${GCS_BUCKET}/pr/**" \
+                --format="json(name,updated)" \
+                | jq -r --arg t "$THRESHOLD" \
+                    '.[] | select(.updated < $t) | .name' \
+                | sed -nE 's#^pr/([0-9]+)/.*#\1#p' \
+                | sort -u \
+                | jq -Rcs '[split("\n")[] | select(length > 0)]'
+            )
+          else
+            pr="${PR_FROM_EVENT:-$PR_FROM_INPUT}"
+            json="[${pr}]"
+          fi
+          echo "json=${json}" >> "$GITHUB_OUTPUT"
+
   teardown:
-    name: Tear down preview environment
+    name: Tear down PR #${{ matrix.pr }}
+    needs: discover
+    if: needs.discover.outputs.prs != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Run teardown when:
-    # - closed: any PR close (tofu destroy is a no-op on empty state)
-    # - unlabeled: the 'preview' label was just removed
-    # - workflow_dispatch: explicit manual teardown
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event.action == 'closed' ||
-      (github.event.action == 'unlabeled' && github.event.label.name == 'preview')
+    permissions:
+      id-token: write
+      pull-requests: write
+    # Serialize per PR so a scheduled GC and a concurrent close-triggered destroy
+    # of the same PR never run tofu destroy on the same state file simultaneously.
+    concurrency:
+      group: prenv-${{ matrix.pr }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: ${{ fromJson(needs.discover.outputs.prs) }}
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -49,34 +96,28 @@ jobs:
         with:
           tofu_wrapper: false
 
-      - name: Resolve PR number
-        id: pr
-        env:
-          PR_FROM_EVENT: ${{ github.event.pull_request.number }}
-          PR_FROM_INPUT: ${{ inputs.pr_number }}
-        run: echo "number=${PR_FROM_EVENT:-$PR_FROM_INPUT}" >> "$GITHUB_OUTPUT"
-
       - name: Terraform init
-        working-directory: terraform/preview
+        working-directory: terraform/env/pr/ephemeral
         env:
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PR_NUMBER: ${{ matrix.pr }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
-          : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 2}"
+          : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 3}"
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
 
       - name: Terraform destroy
-        working-directory: terraform/preview
+        working-directory: terraform/env/pr/ephemeral
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
-          TF_VAR_pr_number: ${{ steps.pr.outputs.number }}
-        run: tofu destroy -auto-approve
+          TF_VAR_pr_number: ${{ matrix.pr }}
+        run: |
+          : "${TF_VAR_project_id:?GCP_PROJECT_ID repository variable is not set — see README setup step 3}"
+          tofu destroy -auto-approve
 
       - name: Update PR comment
-        if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ matrix.pr }}
         run: |
           body=$(printf "## ✅ Preview environment torn down\n\nPR #%s environment destroyed.\n" "$PR_NUMBER")
           gh pr comment "$PR_NUMBER" --edit-last --body "$body" || true
