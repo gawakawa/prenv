@@ -26,10 +26,32 @@ jobs:
           persist-credentials: false
 
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SA }}
+          token_format: access_token
+
+      - name: Extract Docker registry host
+        id: registry
+        env:
+          AR_REPO: ${{ vars.AR_REPO }}
+        run: echo "host=${AR_REPO%%/*}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Artifact Registry
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ${{ steps.registry.outputs.host }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
+        with:
+          context: app
+          push: true
+          tags: ${{ vars.AR_REPO }}/app:${{ github.event.pull_request.head.sha }}
 
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
@@ -50,6 +72,7 @@ jobs:
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ github.event.pull_request.number }}
+          TF_VAR_image: ${{ vars.AR_REPO }}/app:${{ github.event.pull_request.head.sha }}
         run: tofu apply -auto-approve
 
       - name: Get preview URL
