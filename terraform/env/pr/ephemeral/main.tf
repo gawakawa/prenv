@@ -3,12 +3,18 @@ data "google_project" "this" {
 }
 
 resource "google_cloud_run_v2_service" "preview" {
+  # iap_enabled is a Beta-only field, so this resource uses the google-beta provider.
+  provider = google-beta
+
   name     = "prenv-pr-${var.pr_number}"
   project  = var.project_id
   location = var.region
 
   # Must be false so `tofu destroy` can remove the service on PR close.
   deletion_protection = false
+
+  # BETA launch stage is required to use the preview iap_enabled field.
+  launch_stage = "BETA"
 
   # Enable IAP — restricts access to identities listed in the foundation's
   # iap_members variable. Public (allUsers) access is removed.

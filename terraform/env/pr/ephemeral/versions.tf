@@ -6,6 +6,11 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 6.0"
     }
+    # iap_enabled on google_cloud_run_v2_service is a Beta-only field.
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "~> 6.0"
+    }
   }
 
   # Neither bucket nor prefix is hardcoded here; both are supplied at init time:
