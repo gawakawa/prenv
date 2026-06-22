@@ -1,13 +1,3 @@
-# Provision the IAP service agent for this project. The agent SA
-# (service-PROJECT_NUMBER@gcp-sa-iap.iam.gserviceaccount.com) must exist
-# before the preview module can grant it roles/run.invoker on Cloud Run services.
-resource "google_project_service_identity" "iap" {
-  project = var.project_id
-  service = "iap.googleapis.com"
-
-  depends_on = [google_project_service.core]
-}
-
 # Grant IAP access to preview environments at the PROJECT level.
 #
 # Project-level binding covers every Cloud Run service in the project, so no
