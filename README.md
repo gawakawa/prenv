@@ -8,8 +8,7 @@ For each PR, provision an isolated, ephemeral preview environment on Google Clou
 
 ## Structure
 
-- `terraform/shared/` — shared foundation: APIs, state bucket, Workload Identity Federation, deploy service account. Apply **once locally**.
-- `terraform/env/pr/base/` — PR preview shared resources: Artifact Registry repository. Apply **once locally**.
+- `terraform/env/pr/base/` — one-time foundation: state bucket, APIs, Workload Identity Federation, deploy service account, IAP access, Artifact Registry, IAP OAuth secrets. Apply **once locally**.
 - `terraform/env/pr/ephemeral/` — per-PR preview environment: one Cloud Run service. Applied/destroyed automatically by GitHub Actions.
 - `app/` — minimal sample app (Go HTTP server) with Dockerfile.
 - `.github/workflows/preview-deploy.yml` — builds and deploys a preview when the `preview` label is added to a PR.
@@ -44,33 +43,21 @@ an org). These steps are one-time manual prerequisites.
 4. **Do this before the first `tofu apply` of the preview modules** — both the service agent
    (step 3) and the OAuth binding (step 5 below) must exist before `iap_enabled = true` works.
 
-### 2. Apply the shared foundation
-
-```bash
-cd terraform/shared
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars — set project_id, state_bucket_name, github_repository, iap_members
-tofu init
-tofu apply -var-file=terraform.tfvars
-```
-
-Set `iap_members` to the list of Google accounts that should have access to preview
-environments, e.g. `iap_members = ["user:you@example.com"]`.
-
-### 3. Apply the PR preview base
+### 2. Apply the base foundation
 
 ```bash
 cd terraform/env/pr/base
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars — set project_id, iap_oauth_client_id, iap_oauth_client_secret
+# Edit terraform.tfvars — fill in all values (see terraform.tfvars.example)
 tofu init
 tofu apply
 ```
 
-`terraform.tfvars` is gitignored. The `iap_oauth_client_id` and `iap_oauth_client_secret`
-values come from Console step 1.2 above. Applying stores them in Secret Manager.
+`terraform.tfvars` is gitignored. Set `iap_members` to the Google accounts that should access
+preview environments. The `iap_oauth_client_id` and `iap_oauth_client_secret` values come from
+Console step 1.2 above. Applying stores the OAuth credentials in Secret Manager.
 
-### 4. Bind the OAuth client to IAP (manual — once after step 3)
+### 3. Bind the OAuth client to IAP (manual — once after step 2)
 
 `google_iap_settings` does not expose `client_id`/`client_secret`, so IAP binding stays manual.
 Create `iap_settings.yaml`:
@@ -88,7 +75,7 @@ Then apply:
 gcloud iap settings set iap_settings.yaml --project=<project_id>
 ```
 
-### 5. Set GitHub Actions variables
+### 4. Set GitHub Actions variables
 
 Create a GitHub Actions Environment named **`pr`**: GitHub → Settings → Environments → New environment → name it `pr`.
 
@@ -98,13 +85,13 @@ From the `tofu output` values, add these as **Environment variables** inside the
 
 | Variable | Source |
 |---|---|
-| `WIF_PROVIDER` | `cd terraform/shared && tofu output -raw wif_provider_name` |
-| `DEPLOY_SA` | `cd terraform/shared && tofu output -raw deploy_service_account_email` |
+| `WIF_PROVIDER` | `cd terraform/env/pr/base && tofu output -raw wif_provider_name` |
+| `DEPLOY_SA` | `cd terraform/env/pr/base && tofu output -raw deploy_service_account_email` |
 | `GCP_PROJECT_ID` | your Google Cloud project ID |
-| `GCS_BUCKET` | `cd terraform/shared && tofu output -raw state_bucket_name` |
+| `GCS_BUCKET` | `cd terraform/env/pr/base && tofu output -raw state_bucket_name` |
 | `AR_REPO` | `cd terraform/env/pr/base && tofu output -raw repository_url` |
 
-### 6. Create the `preview` label
+### 5. Create the `preview` label
 
 In GitHub → Issues → Labels, create a label named `preview`.
 

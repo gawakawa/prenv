@@ -9,7 +9,7 @@
 # google_iap_brand/google_iap_client require an organization, so the IAP
 # binding itself stays manual.
 #
-# The secretmanager.googleapis.com API is enabled in terraform/shared.
+# The secretmanager.googleapis.com API is enabled via google_project_service.core in this module.
 resource "google_secret_manager_secret" "iap_oauth_client_id" {
   secret_id = "iap-oauth-client-id"
   project   = var.project_id
