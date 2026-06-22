@@ -62,7 +62,7 @@ jobs:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
-          : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 2}"
+          : "${GCS_BUCKET:?GCS_BUCKET repository variable is not set — see README setup step 3}"
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
 
       - name: Terraform destroy
@@ -70,7 +70,9 @@ jobs:
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ steps.pr.outputs.number }}
-        run: tofu destroy -auto-approve
+        run: |
+          : "${TF_VAR_project_id:?GCP_PROJECT_ID repository variable is not set — see README setup step 3}"
+          tofu destroy -auto-approve
 
       - name: Update PR comment
         if: github.event_name == 'pull_request'

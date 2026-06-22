@@ -13,7 +13,6 @@ resource "google_cloud_run_v2_service" "preview" {
   }
 }
 
-# Make the preview URL publicly accessible.
 # Note: this can be blocked by an org policy (iam.allowedPolicyMemberDomains).
 # If apply fails with a policy violation, relax the constraint for this project.
 resource "google_cloud_run_v2_service_iam_member" "invoker" {

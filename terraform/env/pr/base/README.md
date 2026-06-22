@@ -10,10 +10,9 @@ Shared resources for PR preview environments. Applied once manually — not per-
 
 ```bash
 cd terraform/env/pr/base
-cp ../../shared/terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars — set project_id (region and repository_id have defaults)
+# region and repository_id have defaults; only project_id is required
 tofu init
-tofu apply -var-file=terraform.tfvars
+tofu apply -var project_id=<your-project-id>
 ```
 
 After applying, register the output as a GitHub Actions repository variable:
