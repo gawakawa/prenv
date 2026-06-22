@@ -18,3 +18,9 @@ variable "github_repository" {
   description = "GitHub repository in OWNER/REPO format (e.g. gawakawa/prenv). Restricts WIF to this repo only."
   type        = string
 }
+
+variable "iap_members" {
+  description = "Members granted IAP access to all preview environments (e.g. [\"user:you@example.com\"]). Uses project-level binding so no IAP permissions are needed on the CI deploy SA."
+  type        = list(string)
+  default     = []
+}

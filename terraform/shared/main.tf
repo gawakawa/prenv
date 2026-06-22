@@ -8,6 +8,7 @@ locals {
     "storage.googleapis.com",
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
+    "iap.googleapis.com",
   ]
 }
 

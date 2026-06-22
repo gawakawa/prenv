@@ -51,6 +51,7 @@ No modules.
 | ---- | ---- |
 | [google_iam_workload_identity_pool.github](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/iam_workload_identity_pool) | resource |
 | [google_iam_workload_identity_pool_provider.github](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/iam_workload_identity_pool_provider) | resource |
+| [google_iap_web_iam_member.preview_accessor](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/iap_web_iam_member) | resource |
 | [google_project_iam_member.deployer_ar_writer](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project_iam_member) | resource |
 | [google_project_iam_member.deployer_run_admin](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project_iam_member) | resource |
 | [google_project_iam_member.deployer_sa_user](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project_iam_member) | resource |
@@ -67,6 +68,7 @@ No modules.
 | <a name="input_github_repository"></a> [github\_repository](#input\_github\_repository) | GitHub repository in OWNER/REPO format (e.g. gawakawa/prenv). Restricts WIF to this repo only. | `string` | n/a | yes |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Google Cloud project ID. | `string` | n/a | yes |
 | <a name="input_state_bucket_name"></a> [state\_bucket\_name](#input\_state\_bucket\_name) | Globally-unique GCS bucket name for Terraform state. Recommend prefixing with project\_id (e.g. my-project-tfstate). | `string` | n/a | yes |
+| <a name="input_iap_members"></a> [iap\_members](#input\_iap\_members) | Members granted IAP access to all preview environments (e.g. ["user:you@example.com"]). Uses project-level binding so no IAP permissions are needed on the CI deploy SA. | `list(string)` | `[]` | no |
 | <a name="input_region"></a> [region](#input\_region) | Default region. | `string` | `"asia-northeast1"` | no |
 
 ## Outputs

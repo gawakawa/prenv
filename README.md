@@ -17,17 +17,39 @@ For each PR, provision an isolated, ephemeral preview environment on Google Clou
 
 ## One-time setup
 
-### 1. Apply the shared foundation
+### 1. Bootstrap IAP (manual — Console only)
+
+Preview environments are protected by [Identity-Aware Proxy (IAP)](https://cloud.google.com/iap/docs/enabling-cloud-run).
+For projects without a Google Cloud organization, the OAuth consent screen and IAP OAuth client
+must be created via the Console before Terraform can manage IAP:
+
+1. **Configure the OAuth consent screen**: Console → APIs & Services → OAuth consent screen.
+   Select **External**, fill in the required fields, and add your Google account email as a
+   **Test user**. Save and continue through all steps.
+
+2. **Bootstrap the IAP OAuth client**: Console → Security → Identity-Aware Proxy. Enable IAP
+   on any Cloud Run service (a temporary service is fine). This auto-creates the project-level
+   OAuth client and the IAP service agent
+   (`service-PROJECT_NUMBER@gcp-sa-iap.iam.gserviceaccount.com`). Both persist at the project
+   level after the service is deleted.
+
+3. **Do this before the first `tofu apply` of the ephemeral module** — Terraform's `iap_enabled`
+   reuses the project OAuth client created in step 2. Applying without it will fail.
+
+### 2. Apply the shared foundation
 
 ```bash
 cd terraform/shared
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars — set project_id, state_bucket_name, github_repository
+# Edit terraform.tfvars — set project_id, state_bucket_name, github_repository, iap_members
 tofu init
 tofu apply -var-file=terraform.tfvars
 ```
 
-### 2. Apply the PR preview base
+Set `iap_members` to the list of Google accounts that should have access to preview
+environments, e.g. `iap_members = ["user:you@example.com"]`.
+
+### 3. Apply the PR preview base
 
 ```bash
 cd terraform/env/pr/base
@@ -36,9 +58,13 @@ tofu init
 tofu apply -var project_id=<your-project-id>
 ```
 
-### 3. Set GitHub Actions variables
+### 4. Set GitHub Actions variables
 
-From the `tofu output` values, set these as **repository variables** (not secrets) in GitHub → Settings → Secrets and variables → Actions → Variables:
+Create a GitHub Actions Environment named **`pr`**: GitHub → Settings → Environments → New environment → name it `pr`.
+
+> **Do not add protection rules** (required reviewers, wait timer, etc.) — they would block the automatic teardown when a PR is closed.
+
+From the `tofu output` values, add these as **Environment variables** inside the `pr` environment:
 
 | Variable | Source |
 |---|---|
@@ -48,7 +74,7 @@ From the `tofu output` values, set these as **repository variables** (not secret
 | `GCS_BUCKET` | `cd terraform/shared && tofu output -raw state_bucket_name` |
 | `AR_REPO` | `cd terraform/env/pr/base && tofu output -raw repository_url` |
 
-### 4. Create the `preview` label
+### 5. Create the `preview` label
 
 In GitHub → Issues → Labels, create a label named `preview`.
 
