@@ -18,10 +18,10 @@ _: {
           files = "^terraform/shared/[^/]+\\.tf$";
           pass_filenames = false;
         };
-        terraform-docs-pr = {
+        terraform-docs-pr-ephemeral = {
           enable = true;
-          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr";
-          files = "^terraform/env/pr/.*\\.tf$";
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr/ephemeral";
+          files = "^terraform/env/pr/ephemeral/[^/]+\\.tf$";
           pass_filenames = false;
         };
         workflow-timeout = {
