@@ -13,7 +13,7 @@ For each PR, provision an isolated, ephemeral preview environment on Google Clou
 - `terraform/env/pr/ephemeral/` — per-PR preview environment: one Cloud Run service. Applied/destroyed automatically by GitHub Actions.
 - `app/` — minimal sample app (Go HTTP server) with Dockerfile.
 - `.github/workflows/preview-deploy.yml` — builds and deploys a preview when the `preview` label is added to a PR.
-- `.github/workflows/preview-teardown.yml` — destroys the preview when the PR is closed.
+- `.github/workflows/preview-teardown.yml` — destroys the preview when the PR is closed, on a daily GC of stale environments, or manually.
 
 ## One-time setup
 
@@ -59,4 +59,4 @@ Add the `preview` label to a PR. GitHub Actions will:
 2. Run `tofu apply` in `terraform/env/pr/ephemeral/` to deploy a Cloud Run service.
 3. Post the `*.run.app` preview URL as a PR comment.
 
-Close the PR or remove the `preview` label, and Actions tears the environment down automatically.
+Close the PR and Actions tears the environment down automatically. Stale environments (state not updated in 3+ days) are also swept by the daily GC cron.

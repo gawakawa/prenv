@@ -96,5 +96,5 @@ jobs:
           PREVIEW_URL: ${{ steps.url.outputs.url }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          body=$(printf "## 🚀 Preview environment\n\n**URL:** %s\n\nDeployed from commit \`%s\`\n\n> Remove the \`preview\` label or close the PR to tear down.\n" "$PREVIEW_URL" "$HEAD_SHA")
+          body=$(printf "## 🚀 Preview environment\n\n**URL:** %s\n\nDeployed from commit \`%s\`\n\n> Close the PR to tear down (stale environments are also GC'd daily).\n" "$PREVIEW_URL" "$HEAD_SHA")
           gh pr comment "$PR_NUMBER" --edit-last --create-if-none --body "$body"
