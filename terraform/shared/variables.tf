@@ -23,4 +23,9 @@ variable "iap_members" {
   description = "Members granted IAP access to all preview environments (e.g. [\"user:you@example.com\"]). Uses project-level binding so no IAP permissions are needed on the CI deploy SA."
   type        = list(string)
   default     = []
+
+  validation {
+    condition     = length(var.iap_members) > 0
+    error_message = "iap_members must not be empty — at least one member must be granted access, otherwise all preview environments will return IAP 403."
+  }
 }

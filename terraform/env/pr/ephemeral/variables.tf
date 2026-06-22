@@ -19,3 +19,8 @@ variable "image" {
   type        = string
   default     = "us-docker.pkg.dev/cloudrun/container/hello"
 }
+
+variable "iap_service_agent_email" {
+  description = "IAP service agent email (service-PROJECT_NUMBER@gcp-sa-iap.iam.gserviceaccount.com). Set from foundation output iap_service_agent_email."
+  type        = string
+}

@@ -40,12 +40,12 @@ No modules.
 | ---- | ---- |
 | [google_cloud_run_v2_service.preview](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service) | resource |
 | [google_cloud_run_v2_service_iam_member.invoker](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service_iam_member) | resource |
-| [google_project.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/project) | data source |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_iap_service_agent_email"></a> [iap\_service\_agent\_email](#input\_iap\_service\_agent\_email) | IAP service agent email (service-PROJECT\_NUMBER@gcp-sa-iap.iam.gserviceaccount.com). Set from foundation output iap\_service\_agent\_email. | `string` | n/a | yes |
 | <a name="input_pr_number"></a> [pr\_number](#input\_pr\_number) | Pull request number. Used to name and isolate the preview environment. | `number` | n/a | yes |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Google Cloud project ID. | `string` | n/a | yes |
 | <a name="input_image"></a> [image](#input\_image) | Container image to deploy. Defaults to a public placeholder; replace with your app image. | `string` | `"us-docker.pkg.dev/cloudrun/container/hello"` | no |
