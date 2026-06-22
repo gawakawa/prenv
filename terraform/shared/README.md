@@ -77,7 +77,6 @@ No modules.
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_deploy_service_account_email"></a> [deploy\_service\_account\_email](#output\_deploy\_service\_account\_email) | Deploy service account email. Set as GitHub Actions variable DEPLOY\_SA. |
-| <a name="output_iap_service_agent_email"></a> [iap\_service\_agent\_email](#output\_iap\_service\_agent\_email) | IAP service agent email. Set as GitHub Actions variable IAP\_SERVICE\_AGENT\_EMAIL. |
 | <a name="output_state_bucket_name"></a> [state\_bucket\_name](#output\_state\_bucket\_name) | GCS bucket for Terraform state. Use as backend `bucket` in per-PR module. |
 | <a name="output_wif_provider_name"></a> [wif\_provider\_name](#output\_wif\_provider\_name) | Workload Identity Provider resource name. Set as GitHub Actions variable WIF\_PROVIDER. |
 <!-- END_TF_DOCS -->

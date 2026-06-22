@@ -1,3 +1,7 @@
+data "google_project" "this" {
+  project_id = var.project_id
+}
+
 resource "google_cloud_run_v2_service" "preview" {
   name     = "prenv-pr-${var.pr_number}"
   project  = var.project_id
@@ -25,5 +29,5 @@ resource "google_cloud_run_v2_service_iam_member" "invoker" {
   location = var.region
   name     = google_cloud_run_v2_service.preview.name
   role     = "roles/run.invoker"
-  member   = "serviceAccount:${var.iap_service_agent_email}"
+  member   = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-iap.iam.gserviceaccount.com"
 }

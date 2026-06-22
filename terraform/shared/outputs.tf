@@ -12,8 +12,3 @@ output "deploy_service_account_email" {
   description = "Deploy service account email. Set as GitHub Actions variable DEPLOY_SA."
   value       = google_service_account.deployer.email
 }
-
-output "iap_service_agent_email" {
-  description = "IAP service agent email. Set as GitHub Actions variable IAP_SERVICE_AGENT_EMAIL."
-  value       = google_project_service_identity.iap.email
-}
