@@ -4,7 +4,7 @@ Shared resources for PR preview environments. Applied once manually — not per-
 
 ## What this creates
 
-- Artifact Registry repository (`DOCKER` format) for preview environment container images
+- Artifact Registry repository (`DOCKER` format) for preview environment container images, with a cleanup policy that deletes images older than `image_max_age` (default: 7 days)
 
 ## Usage
 
@@ -70,6 +70,8 @@ No modules.
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Google Cloud project ID. | `string` | n/a | yes |
 | <a name="input_state_bucket_name"></a> [state\_bucket\_name](#input\_state\_bucket\_name) | Globally-unique GCS bucket name for Terraform state. Recommend prefixing with project\_id (e.g. my-project-tfstate). | `string` | n/a | yes |
 | <a name="input_iap_members"></a> [iap\_members](#input\_iap\_members) | Members granted IAP access to all preview environments (e.g. ["user:you@example.com"]). Uses project-level binding so no IAP permissions are needed on the CI deploy SA. | `list(string)` | `[]` | no |
+| <a name="input_image_cleanup_dry_run"></a> [image\_cleanup\_dry\_run](#input\_image\_cleanup\_dry\_run) | When true, the cleanup policy only logs what it would delete instead of deleting. Set to true first to inspect matches before enabling deletion. | `bool` | `false` | no |
+| <a name="input_image_max_age"></a> [image\_max\_age](#input\_image\_max\_age) | Delete preview images older than this age. Must exceed the stale-sweep window (3 days) so in-use images are never removed. | `string` | `"604800s"` | no |
 | <a name="input_region"></a> [region](#input\_region) | Region for the Artifact Registry repository. | `string` | `"asia-northeast1"` | no |
 | <a name="input_repository_id"></a> [repository\_id](#input\_repository\_id) | Artifact Registry repository ID. Used as the Docker image repository name. | `string` | `"prenv-preview"` | no |
 

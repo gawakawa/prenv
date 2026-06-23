@@ -53,5 +53,18 @@ resource "google_artifact_registry_repository" "preview" {
   format        = "DOCKER"
   description   = "Docker images for per-PR preview environments."
 
+  # Server-side GC: delete stale preview images automatically.
+  # The daily stale sweep (preview-teardown.yml) destroys Cloud Run services after 3 days,
+  # so images older than that threshold are safe to delete — in-use images are always newer.
+  cleanup_policy_dry_run = var.image_cleanup_dry_run
+
+  cleanup_policies {
+    id     = "delete-stale-preview-images"
+    action = "DELETE"
+    condition {
+      older_than = var.image_max_age
+    }
+  }
+
   depends_on = [google_project_service.core]
 }

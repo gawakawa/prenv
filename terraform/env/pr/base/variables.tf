@@ -15,6 +15,18 @@ variable "repository_id" {
   default     = "prenv-preview"
 }
 
+variable "image_max_age" {
+  description = "Delete preview images older than this age. Must exceed the stale-sweep window (3 days) so in-use images are never removed."
+  type        = string
+  default     = "604800s" # 7 days
+}
+
+variable "image_cleanup_dry_run" {
+  description = "When true, the cleanup policy only logs what it would delete instead of deleting. Set to true first to inspect matches before enabling deletion."
+  type        = bool
+  default     = false
+}
+
 variable "state_bucket_name" {
   description = "Globally-unique GCS bucket name for Terraform state. Recommend prefixing with project_id (e.g. my-project-tfstate)."
   type        = string
