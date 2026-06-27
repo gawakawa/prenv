@@ -1,10 +1,11 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"net/http"
 	"path"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -69,15 +70,16 @@ func toEnvironment(svc *runpb.Service) (Environment, bool) {
 		return Environment{}, false
 	}
 
+	containers := svc.GetTemplate().GetContainers()
 	var image string
-	for _, c := range svc.GetTemplate().GetContainers() {
+	for _, c := range containers {
 		if c.GetName() == "app" {
 			image = c.GetImage()
 			break
 		}
 	}
-	if image == "" && len(svc.GetTemplate().GetContainers()) > 0 {
-		image = svc.GetTemplate().GetContainers()[0].GetImage()
+	if image == "" && len(containers) > 0 {
+		image = containers[0].GetImage()
 	}
 
 	return Environment{
@@ -91,8 +93,8 @@ func toEnvironment(svc *runpb.Service) (Environment, bool) {
 }
 
 func environmentsHandler(client *run.ServicesClient, project, region string) http.HandlerFunc {
+	parent := "projects/" + project + "/locations/" + region
 	return func(w http.ResponseWriter, r *http.Request) {
-		parent := "projects/" + project + "/locations/" + region
 		it := client.ListServices(r.Context(), &runpb.ListServicesRequest{Parent: parent})
 
 		var envs []Environment
@@ -110,8 +112,8 @@ func environmentsHandler(client *run.ServicesClient, project, region string) htt
 			}
 		}
 
-		sort.Slice(envs, func(i, j int) bool {
-			return envs[i].PRNumber < envs[j].PRNumber
+		slices.SortFunc(envs, func(a, b Environment) int {
+			return cmp.Compare(a.PRNumber, b.PRNumber)
 		})
 
 		w.Header().Set("Content-Type", "application/json")
