@@ -4,8 +4,6 @@
 
 A Google Cloud version of the preview environment setup in [this blog post](https://www.m3tech.blog/entry/2026/06/16/153849).
 
-For each PR, provision an isolated, ephemeral preview environment on Google Cloud with Terraform + Cloud Run, then tear it down when the PR is closed.
-
 ## Structure
 
 - `terraform/env/pr/base/` — one-time foundation: state bucket, APIs, Workload Identity Federation, deploy service account, IAP access, Artifact Registry, IAP OAuth secrets. Apply **once locally**.
@@ -19,30 +17,14 @@ For each PR, provision an isolated, ephemeral preview environment on Google Clou
 
 ### 1. Bootstrap IAP (manual — Console only)
 
-Preview environments are protected by [Identity-Aware Proxy (IAP)](https://cloud.google.com/iap/docs/enabling-cloud-run).
-Projects without a Google Cloud organization cannot use the Google-managed IAP OAuth client and
-must create a custom one. IAP binding itself cannot be managed by Terraform under this constraint
-(`google_iap_settings` does not expose `client_id`/`client_secret`; `google_iap_brand` requires
-an org). These steps are one-time manual prerequisites.
-
-1. **Configure the OAuth consent screen**: Console → APIs & Services → OAuth consent screen.
-   Select **External**, fill in required fields, and add your Google account as a **Test user**.
-
-2. **Create a custom OAuth client**: Console → APIs & Services → Credentials → Create credentials
-   → OAuth client ID → Web application. Under **Authorized redirect URIs**, add:
+1. **Configure the OAuth consent screen**: Console → APIs & Services → OAuth consent screen → External. Add your Google account as a Test user.
+2. **Create a custom OAuth client**: Console → APIs & Services → Credentials → OAuth client ID → Web application. Add redirect URI:
    ```
    https://iap.googleapis.com/v1/oauth/clientIds/<CLIENT_ID>:handleRedirect
    ```
-   (Replace `<CLIENT_ID>` after you save — the ID appears in the credentials list.) Note the
-   **Client ID** and **Client secret** for use in `terraform/env/pr/base/terraform.tfvars`.
-
-3. **Bootstrap the IAP service agent**: Console → Security → Identity-Aware Proxy. Toggle IAP on
-   for any Cloud Run service (a temporary one is fine). This creates the project-level IAP service
-   agent (`service-PROJECT_NUMBER@gcp-sa-iap.iam.gserviceaccount.com`) which persists after the
-   service is deleted.
-
-4. **Do this before the first `tofu apply` of the preview modules** — both the service agent
-   (step 3) and the OAuth binding (step 5 below) must exist before `iap_enabled = true` works.
+   Note the Client ID and Client secret for `terraform/env/pr/base/terraform.tfvars`.
+3. **Bootstrap the IAP service agent**: Console → Security → Identity-Aware Proxy. Toggle IAP on for any Cloud Run service once.
+4. Complete steps 1–3 before running `tofu apply`.
 
 ### 2. Apply the base foundation
 
@@ -54,13 +36,8 @@ tofu init
 tofu apply
 ```
 
-`terraform.tfvars` is gitignored. Set `iap_members` to the Google accounts that should access
-preview environments. The `iap_oauth_client_id` and `iap_oauth_client_secret` values come from
-Console step 1.2 above. Applying stores the OAuth credentials in Secret Manager.
-
 ### 3. Bind the OAuth client to IAP (manual — once after step 2)
 
-`google_iap_settings` does not expose `client_id`/`client_secret`, so IAP binding stays manual.
 Create `iap_settings.yaml`:
 
 ```yaml
@@ -70,19 +47,17 @@ access_settings:
     client_secret: <CLIENT_SECRET>
 ```
 
-Then apply:
-
 ```bash
 gcloud iap settings set iap_settings.yaml --project=<project_id>
 ```
 
 ### 4. Set GitHub Actions variables
 
-Create a GitHub Actions Environment named **`pr`**: GitHub → Settings → Environments → New environment → name it `pr`.
+GitHub → Settings → Environments → New environment → name it `pr`.
 
-> **Do not add protection rules** (required reviewers, wait timer, etc.) — they would block the automatic teardown when a PR is closed.
+> **Do not add protection rules** — they would block automatic teardown when a PR is closed.
 
-From the `tofu output` values, add these as **Environment variables** inside the `pr` environment:
+Add these as **Environment variables**:
 
 | Variable | Source |
 |---|---|
@@ -94,7 +69,7 @@ From the `tofu output` values, add these as **Environment variables** inside the
 
 ### 5. Create the `preview` label
 
-In GitHub → Issues → Labels, create a label named `preview`.
+GitHub → Issues → Labels → create a label named `preview`.
 
 ## Usage
 
