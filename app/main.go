@@ -21,19 +21,18 @@ func main() {
 	type monitoringConfig struct {
 		client  *run.ServicesClient
 		project string
-		region  string
 	}
+	ctx := context.Background()
 	var monitoring *monitoringConfig
-	if project := os.Getenv("GCP_PROJECT_ID"); project != "" {
-		region := os.Getenv("REGION")
-		if region == "" {
-			region = "asia-northeast1"
-		}
-		client, err := run.NewServicesClient(context.Background())
+	if project := detectProject(ctx); project != "" {
+		client, err := run.NewServicesClient(ctx)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("monitoring disabled: %v", err)
+		} else {
+			monitoring = &monitoringConfig{client, project}
 		}
-		monitoring = &monitoringConfig{client, project, region}
+	} else {
+		log.Print("monitoring disabled: project not detected")
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -63,15 +62,16 @@ func main() {
 		}
 
 		if monitoring != nil {
-			envs, err := listEnvironments(r.Context(), monitoring.client, monitoring.project, monitoring.region)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
 			_, _ = fmt.Fprintln(w)
-			for _, env := range envs {
-				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
-					env.Name, env.Status, env.CommitSHA, env.URL, env.UpdatedAt)
+			envs, err := listEnvironments(r.Context(), monitoring.client, monitoring.project)
+			if err != nil {
+				log.Printf("list environments: %v", err)
+				_, _ = fmt.Fprintf(w, "monitoring unavailable: %v\n", err)
+			} else {
+				for _, env := range envs {
+					_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+						env.Name, env.Status, env.CommitSHA, env.URL, env.UpdatedAt)
+				}
 			}
 		}
 	})
