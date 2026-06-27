@@ -17,6 +17,7 @@ import (
 const (
 	project = "gawakawa-prenv"
 	region  = "asia-northeast1"
+	parent  = "projects/" + project + "/locations/" + region
 )
 
 type Environment struct {
@@ -93,7 +94,6 @@ func toEnvironment(svc *runpb.Service) (Environment, bool) {
 }
 
 func listEnvironments(ctx context.Context, client *run.ServicesClient) ([]Environment, error) {
-	parent := "projects/" + project + "/locations/" + region
 	it := client.ListServices(ctx, &runpb.ListServicesRequest{Parent: parent})
 
 	var envs []Environment

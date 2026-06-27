@@ -18,11 +18,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var runClient *run.ServicesClient
-	if client, err := run.NewServicesClient(context.Background()); err != nil {
+	runClient, err := run.NewServicesClient(context.Background())
+	if err != nil {
 		log.Printf("monitoring disabled: %v", err)
-	} else {
-		runClient = client
+		runClient = nil
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
