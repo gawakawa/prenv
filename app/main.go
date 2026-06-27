@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	run "cloud.google.com/go/run/apiv2"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -42,6 +44,18 @@ func main() {
 			_, _ = fmt.Fprintln(w, body)
 		}
 	})
+
+	if project := os.Getenv("GCP_PROJECT_ID"); project != "" {
+		region := os.Getenv("REGION")
+		if region == "" {
+			region = "asia-northeast1"
+		}
+		client, err := run.NewServicesClient(context.Background())
+		if err != nil {
+			log.Fatal(err)
+		}
+		http.Handle("GET /environments", environmentsHandler(client, project, region))
+	}
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
