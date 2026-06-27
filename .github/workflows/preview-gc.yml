@@ -46,28 +46,16 @@ jobs:
     name: GC PR #${{ matrix.pr }}
     needs: discover
     if: needs.discover.outputs.prs != '[]'
-    runs-on: ubuntu-latest
-    environment: pr
-    timeout-minutes: 15
     permissions:
       id-token: write
-    concurrency:
-      group: prenv-${{ matrix.pr }}
-      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
         pr: ${{ fromJson(needs.discover.outputs.prs) }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-      - name: Tear down preview environment
-        uses: ./.github/actions/teardown-pr
-        with:
-          pr: ${{ matrix.pr }}
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-          gcs_bucket: ${{ vars.GCS_BUCKET }}
-          wif_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.DEPLOY_SA }}
+    uses: ./.github/workflows/teardown-pr.yml
+    with:
+      pr: ${{ matrix.pr }}
+      project_id: ${{ vars.GCP_PROJECT_ID }}
+      gcs_bucket: ${{ vars.GCS_BUCKET }}
+      wif_provider: ${{ vars.WIF_PROVIDER }}
+      service_account: ${{ vars.DEPLOY_SA }}

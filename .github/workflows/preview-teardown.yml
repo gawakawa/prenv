@@ -37,24 +37,12 @@ jobs:
   teardown:
     name: Tear down PR #${{ needs.resolve.outputs.pr }}
     needs: resolve
-    runs-on: ubuntu-latest
-    environment: pr
-    timeout-minutes: 15
     permissions:
       id-token: write
-    concurrency:
-      group: prenv-${{ needs.resolve.outputs.pr }}
-      cancel-in-progress: false
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-      - name: Tear down preview environment
-        uses: ./.github/actions/teardown-pr
-        with:
-          pr: ${{ needs.resolve.outputs.pr }}
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-          gcs_bucket: ${{ vars.GCS_BUCKET }}
-          wif_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.DEPLOY_SA }}
+    uses: ./.github/workflows/teardown-pr.yml
+    with:
+      pr: ${{ needs.resolve.outputs.pr }}
+      project_id: ${{ vars.GCP_PROJECT_ID }}
+      gcs_bucket: ${{ vars.GCS_BUCKET }}
+      wif_provider: ${{ vars.WIF_PROVIDER }}
+      service_account: ${{ vars.DEPLOY_SA }}
