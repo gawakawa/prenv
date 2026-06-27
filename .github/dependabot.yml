@@ -6,3 +6,27 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+
+  - package-ecosystem: "gomod"
+    directory: "/app"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
+
+  - package-ecosystem: "docker"
+    directories: ["/app", "/db"]
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+
+  - package-ecosystem: "terraform"
+    directories: ["/terraform/env/pr/base", "/terraform/env/pr/ephemeral"]
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7

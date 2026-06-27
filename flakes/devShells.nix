@@ -5,6 +5,7 @@ _: {
       devPackages =
         config.pre-commit.settings.enabledPackages
         ++ (with pkgs; [
+          go
           google-cloud-sdk
           opentofu
           terraform-docs

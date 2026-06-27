@@ -45,6 +45,7 @@ jobs:
           {
             echo "host=${AR_REPO%%/*}"
             echo "ref=${AR_REPO}/app:${HEAD_SHA}"
+            echo "db_ref=${AR_REPO}/db:${HEAD_SHA}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Setup OpenTofu
@@ -59,12 +60,19 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
 
-      - name: Build and push Docker image
+      - name: Build and push app image
         uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
         with:
           context: app
           push: true
           tags: ${{ steps.image.outputs.ref }}
+
+      - name: Build and push db image
+        uses: docker/build-push-action@48aba3b46d1b1fec4febb7c5d0c644b249a11355 # v6.10.0
+        with:
+          context: db
+          push: true
+          tags: ${{ steps.image.outputs.db_ref }}
 
       - name: Terraform init
         working-directory: terraform/env/pr/ephemeral
@@ -81,6 +89,7 @@ jobs:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ github.event.pull_request.number }}
           TF_VAR_image: ${{ steps.image.outputs.ref }}
+          TF_VAR_db_image: ${{ steps.image.outputs.db_ref }}
         run: |
           : "${TF_VAR_project_id:?GCP_PROJECT_ID environment variable is not set — see README setup step 4}"
           tofu apply -auto-approve

@@ -19,3 +19,9 @@ variable "image" {
   type        = string
   default     = "us-docker.pkg.dev/cloudrun/container/hello"
 }
+
+variable "db_image" {
+  description = "Postgres sidecar image with migration and seed SQL baked in via initdb. Defaults to vanilla postgres:18-alpine (for teardown); replace with the built db image for deploy."
+  type        = string
+  default     = "postgres:18-alpine"
+}

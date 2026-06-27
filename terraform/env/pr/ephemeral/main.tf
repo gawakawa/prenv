@@ -21,8 +21,60 @@ resource "google_cloud_run_v2_service" "preview" {
   iap_enabled = true
 
   template {
+    scaling {
+      max_instance_count = 1
+    }
+
+    volumes {
+      name = "pgdata"
+      empty_dir {
+        medium     = "MEMORY"
+        size_limit = "256Mi"
+      }
+    }
+
     containers {
+      name  = "app"
       image = var.image
+      ports { container_port = 8080 }
+      env {
+        name  = "DATABASE_URL"
+        value = "postgres://postgres@localhost:5432/app?sslmode=disable"
+      }
+      resources {
+        limits            = { cpu = "1", memory = "512Mi" }
+        cpu_idle          = true
+        startup_cpu_boost = true
+      }
+      depends_on = ["postgres"]
+    }
+
+    containers {
+      name  = "postgres"
+      image = var.db_image
+      env {
+        name  = "POSTGRES_DB"
+        value = "app"
+      }
+      env {
+        name  = "POSTGRES_HOST_AUTH_METHOD"
+        value = "trust"
+      }
+      volume_mounts {
+        name       = "pgdata"
+        mount_path = "/var/lib/postgresql"
+      }
+      resources {
+        limits   = { cpu = "1", memory = "512Mi" }
+        cpu_idle = true
+      }
+      startup_probe {
+        tcp_socket { port = 5432 }
+        initial_delay_seconds = 5
+        period_seconds        = 5
+        timeout_seconds       = 3
+        failure_threshold     = 24
+      }
     }
   }
 }
