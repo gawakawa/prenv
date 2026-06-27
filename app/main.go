@@ -24,12 +24,21 @@ func main() {
 		}
 		defer rows.Close()
 
+		var bodies []string
 		for rows.Next() {
 			var body string
 			if err := rows.Scan(&body); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			bodies = append(bodies, body)
+		}
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		for _, body := range bodies {
 			fmt.Fprintln(w, body)
 		}
 	})
