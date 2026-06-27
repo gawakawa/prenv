@@ -29,14 +29,10 @@ jobs:
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
           : "${GCS_BUCKET:?GCS_BUCKET environment variable is not set — see README setup step 4}"
-          THRESHOLD=$(date -u -d '3 days ago' '+%Y-%m-%dT%H:%M:%SZ')
-          raw=$(gcloud storage objects list "gs://${GCS_BUCKET}/pr/**" --format="json(name,updated)" 2>/dev/null) || raw='[]'
-          [ -n "$raw" ] || raw='[]'
-          json=$(
-            printf '%s' "$raw" \
-              | jq -c --arg t "$THRESHOLD" \
-                  '[.[] | select(.updated < $t) | .name | capture("^pr/(?<n>[0-9]+)/").n] | unique'
-          )
+          threshold=$(date -u -d '3 days ago' '+%Y-%m-%dT%H:%M:%SZ')
+          raw=$(gcloud storage objects list "gs://${GCS_BUCKET}/pr/**" --format="json(name,updated)" 2>/dev/null) || true
+          json=$(jq -cn --argjson o "${raw:-[]}" --arg t "$threshold" \
+            '[$o[] | select(.updated < $t).name | capture("^pr/(?<n>[0-9]+)/").n] | unique')
           echo "json=${json}" >> "$GITHUB_OUTPUT"
 
   gc:
