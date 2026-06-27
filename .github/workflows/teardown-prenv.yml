@@ -1,4 +1,4 @@
-name: "Preview – Teardown PR"
+name: "Teardown prenv"
 
 on:
   workflow_call:

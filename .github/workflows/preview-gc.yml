@@ -49,7 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         pr: ${{ fromJson(needs.discover.outputs.prs) }}
-    uses: ./.github/workflows/teardown-pr.yml
+    uses: ./.github/workflows/teardown-prenv.yml
     with:
       pr: ${{ matrix.pr }}
       project_id: ${{ vars.GCP_PROJECT_ID }}

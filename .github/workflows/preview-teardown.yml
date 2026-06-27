@@ -35,7 +35,7 @@ jobs:
     needs: resolve
     permissions:
       id-token: write
-    uses: ./.github/workflows/teardown-pr.yml
+    uses: ./.github/workflows/teardown-prenv.yml
     with:
       pr: ${{ needs.resolve.outputs.pr }}
       project_id: ${{ vars.GCP_PROJECT_ID }}
