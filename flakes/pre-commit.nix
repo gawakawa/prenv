@@ -36,7 +36,7 @@ _: {
           enable = true;
           name = "golangci-lint";
           package = pkgs.golangci-lint;
-          entry = "${pkgs.bash}/bin/bash -c 'cd app && PATH=${pkgs.go}/bin:$PATH GOFLAGS=-mod=vendor ${pkgs.golangci-lint}/bin/golangci-lint run ./...'";
+          entry = "${pkgs.bash}/bin/bash -c 'cd app && PATH=${pkgs.go}/bin:$PATH ${pkgs.golangci-lint}/bin/golangci-lint run ./...'";
           files = "^app/.*\\.go$";
           pass_filenames = false;
         };
