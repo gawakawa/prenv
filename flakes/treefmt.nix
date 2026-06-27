@@ -13,6 +13,14 @@ _: {
           enable = true;
           includes = [ "*.nix" ];
         };
+        gofmt = {
+          enable = true;
+          includes = [ "*.go" ];
+        };
+        goimports = {
+          enable = true;
+          includes = [ "*.go" ];
+        };
       };
     };
   };

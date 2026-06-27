@@ -11,6 +11,7 @@ _: {
           enable = true;
           args = [ "--offline" ];
         };
+        hadolint.enable = true;
         tflint.enable = true;
         terraform-docs-pr-base = {
           enable = true;
