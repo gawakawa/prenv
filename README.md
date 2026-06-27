@@ -11,8 +11,9 @@ For each PR, provision an isolated, ephemeral preview environment on Google Clou
 - `terraform/env/pr/base/` — one-time foundation: state bucket, APIs, Workload Identity Federation, deploy service account, IAP access, Artifact Registry, IAP OAuth secrets. Apply **once locally**.
 - `terraform/env/pr/ephemeral/` — per-PR preview environment: one Cloud Run service. Applied/destroyed automatically by GitHub Actions.
 - `app/` — minimal sample app (Go HTTP server) with Dockerfile.
-- `.github/workflows/preview-deploy.yml` — builds and deploys a preview when the `preview` label is added to a PR.
-- `.github/workflows/preview-teardown.yml` — destroys the preview when the PR is closed, on a daily GC of stale environments, or manually.
+- `.github/workflows/deploy-prenv.yml` — builds and deploys a preview when the `preview` label is added to a PR.
+- `.github/workflows/teardown-prenv.yml` — destroys the preview when the PR is closed or manually triggered.
+- `.github/workflows/gc-prenv.yml` — daily GC of stale environments (state not updated in 3+ days).
 
 ## One-time setup
 

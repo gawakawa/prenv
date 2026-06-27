@@ -1,4 +1,4 @@
-name: "Preview – GC"
+name: "GC prenv"
 
 on:
   schedule:
@@ -44,6 +44,6 @@ jobs:
       fail-fast: false
       matrix:
         pr: ${{ fromJson(needs.discover.outputs.prs) }}
-    uses: ./.github/workflows/teardown-prenv.yml
+    uses: ./.github/workflows/destroy-prenv.yml
     with:
       pr: ${{ matrix.pr }}
