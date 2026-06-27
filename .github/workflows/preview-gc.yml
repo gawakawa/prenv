@@ -34,11 +34,8 @@ jobs:
           [ -n "$raw" ] || raw='[]'
           json=$(
             printf '%s' "$raw" \
-              | jq -r --arg t "$THRESHOLD" \
-                  '.[] | select(.updated < $t) | .name' \
-              | sed -nE 's#^pr/([0-9]+)/.*#\1#p' \
-              | sort -u \
-              | jq -Rcs '[split("\n")[] | select(length > 0)]'
+              | jq -c --arg t "$THRESHOLD" \
+                  '[.[] | select(.updated < $t) | .name | capture("^pr/(?<n>[0-9]+)/").n] | unique'
           )
           echo "json=${json}" >> "$GITHUB_OUTPUT"
 
