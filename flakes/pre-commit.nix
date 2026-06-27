@@ -32,6 +32,7 @@ _: {
           entry = "${pkgs.check-jsonschema}/bin/check-jsonschema --builtin-schema github-workflows-require-timeout";
           files = "\\.github/workflows/.*\\.ya?ml$";
         };
+
       };
     };
 }

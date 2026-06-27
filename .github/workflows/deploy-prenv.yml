@@ -1,4 +1,4 @@
-name: "Preview – Deploy"
+name: "Deploy prenv"
 
 on:
   pull_request:
@@ -41,7 +41,6 @@ jobs:
           AR_REPO: ${{ vars.AR_REPO }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          : "${AR_REPO:?AR_REPO environment variable is not set — see README setup step 4}"
           {
             echo "host=${AR_REPO%%/*}"
             echo "ref=${AR_REPO}/app:${HEAD_SHA}"
@@ -80,7 +79,6 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
-          : "${GCS_BUCKET:?GCS_BUCKET environment variable is not set — see README setup step 4}"
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
 
       - name: Terraform apply
@@ -91,7 +89,6 @@ jobs:
           TF_VAR_image: ${{ steps.image.outputs.ref }}
           TF_VAR_db_image: ${{ steps.image.outputs.db_ref }}
         run: |
-          : "${TF_VAR_project_id:?GCP_PROJECT_ID environment variable is not set — see README setup step 4}"
           tofu apply -auto-approve
 
       - name: Get preview URL
