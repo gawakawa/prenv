@@ -27,7 +27,7 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer func() { _ = rows.Close() }()
+		defer rows.Close()
 
 		messages := []Message{}
 		for rows.Next() {
