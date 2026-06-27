@@ -16,21 +16,17 @@ jobs:
     permissions:
       pull-requests: read
     outputs:
-      pr: ${{ steps.pr.outputs.pr }}
+      pr: ${{ github.event.pull_request.number || steps.branch.outputs.pr }}
     steps:
-      - name: Resolve PR number
-        id: pr
+      - name: Resolve PR from branch
+        id: branch
+        if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_FROM_EVENT: ${{ github.event.pull_request.number }}
           BRANCH: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
-          if [ -n "$PR_FROM_EVENT" ]; then
-            pr="$PR_FROM_EVENT"
-          else
-            pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state all --json number --jq '.[0].number // empty')
-          fi
+          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state all --json number --jq '.[0].number // empty')
           : "${pr:?No PR found for branch ${BRANCH}}"
           echo "pr=${pr}" >> "$GITHUB_OUTPUT"
 
