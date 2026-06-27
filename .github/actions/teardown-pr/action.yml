@@ -52,7 +52,7 @@ runs:
         TF_VAR_project_id: ${{ inputs.project_id }}
         TF_VAR_pr_number: ${{ inputs.pr }}
       run: |
-        : "${TF_VAR_project_id:?GCP_PROJECT_ID environment variable is not set — see README setup step 4}"
+        : "${TF_VAR_project_id:?project_id input is not set — see README setup step 4}"
         tofu destroy -auto-approve
 
     - name: Update PR comment
@@ -62,4 +62,4 @@ runs:
         PR_NUMBER: ${{ inputs.pr }}
       run: |
         body=$(printf "## ✅ Preview environment torn down\n\nPR #%s environment destroyed.\n" "$PR_NUMBER")
-        gh pr comment "$PR_NUMBER" --edit-last --body "$body" || true
+        gh pr comment "$PR_NUMBER" --edit-last --create-if-none --body "$body" || true
