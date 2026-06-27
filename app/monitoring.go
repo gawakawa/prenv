@@ -3,22 +3,21 @@ package main
 import (
 	"cmp"
 	"context"
-	"encoding/json"
-	"os"
 	"path"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"cloud.google.com/go/compute/metadata"
 	run "cloud.google.com/go/run/apiv2"
 	"cloud.google.com/go/run/apiv2/runpb"
 	"google.golang.org/api/iterator"
 )
 
-const region = "asia-northeast1"
+const (
+	project = "gawakawa-prenv"
+	region  = "asia-northeast1"
+)
 
 type Environment struct {
 	PRNumber  int
@@ -27,45 +26,6 @@ type Environment struct {
 	Status    string
 	CommitSHA string
 	UpdatedAt string
-}
-
-func detectProject(ctx context.Context) string {
-	if metadata.OnGCE() {
-		if id, err := metadata.ProjectIDWithContext(ctx); err == nil && id != "" {
-			return id
-		}
-	}
-	return projectFromADC()
-}
-
-func projectFromADC() string {
-	p := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	if p == "" {
-		dir := os.Getenv("CLOUDSDK_CONFIG")
-		if dir == "" {
-			home, err := os.UserHomeDir()
-			if err != nil {
-				return ""
-			}
-			dir = filepath.Join(home, ".config", "gcloud")
-		}
-		p = filepath.Join(dir, "application_default_credentials.json")
-	}
-	data, err := os.ReadFile(p)
-	if err != nil {
-		return ""
-	}
-	var f struct {
-		ProjectID      string `json:"project_id"`
-		QuotaProjectID string `json:"quota_project_id"`
-	}
-	if err := json.Unmarshal(data, &f); err != nil {
-		return ""
-	}
-	if f.ProjectID != "" {
-		return f.ProjectID
-	}
-	return f.QuotaProjectID
 }
 
 func parsePRNumber(name string) (int, bool) {
@@ -132,7 +92,7 @@ func toEnvironment(svc *runpb.Service) (Environment, bool) {
 	}, true
 }
 
-func listEnvironments(ctx context.Context, client *run.ServicesClient, project string) ([]Environment, error) {
+func listEnvironments(ctx context.Context, client *run.ServicesClient) ([]Environment, error) {
 	parent := "projects/" + project + "/locations/" + region
 	it := client.ListServices(ctx, &runpb.ListServicesRequest{Parent: parent})
 

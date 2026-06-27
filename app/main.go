@@ -18,21 +18,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	type monitoringConfig struct {
-		client  *run.ServicesClient
-		project string
-	}
-	ctx := context.Background()
-	var monitoring *monitoringConfig
-	if project := detectProject(ctx); project != "" {
-		client, err := run.NewServicesClient(ctx)
-		if err != nil {
-			log.Printf("monitoring disabled: %v", err)
-		} else {
-			monitoring = &monitoringConfig{client, project}
-		}
+	var runClient *run.ServicesClient
+	if client, err := run.NewServicesClient(context.Background()); err != nil {
+		log.Printf("monitoring disabled: %v", err)
 	} else {
-		log.Print("monitoring disabled: project not detected")
+		runClient = client
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -61,9 +51,9 @@ func main() {
 			_, _ = fmt.Fprintln(w, body)
 		}
 
-		if monitoring != nil {
+		if runClient != nil {
 			_, _ = fmt.Fprintln(w)
-			envs, err := listEnvironments(r.Context(), monitoring.client, monitoring.project)
+			envs, err := listEnvironments(r.Context(), runClient)
 			if err != nil {
 				log.Printf("list environments: %v", err)
 				_, _ = fmt.Fprintf(w, "monitoring unavailable: %v\n", err)
