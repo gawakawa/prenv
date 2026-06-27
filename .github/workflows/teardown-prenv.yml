@@ -42,7 +42,6 @@ jobs:
           PR_NUMBER: ${{ inputs.pr }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
-          : "${GCS_BUCKET:?GCS_BUCKET environment variable is not set — see README setup step 4}"
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
       - name: Terraform destroy
         working-directory: terraform/env/pr/ephemeral
@@ -50,5 +49,4 @@ jobs:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ inputs.pr }}
         run: |
-          : "${TF_VAR_project_id:?GCP_PROJECT_ID environment variable is not set — see README setup step 4}"
           tofu destroy -auto-approve
