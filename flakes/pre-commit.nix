@@ -32,6 +32,14 @@ _: {
           entry = "${pkgs.check-jsonschema}/bin/check-jsonschema --builtin-schema github-workflows-require-timeout";
           files = "\\.github/workflows/.*\\.ya?ml$";
         };
+        golangci-lint-app = {
+          enable = true;
+          name = "golangci-lint";
+          package = pkgs.golangci-lint;
+          entry = "${pkgs.bash}/bin/bash -c 'cd app && PATH=${pkgs.go}/bin:$PATH GOFLAGS=-mod=vendor ${pkgs.golangci-lint}/bin/golangci-lint run ./...'";
+          files = "^app/.*\\.go$";
+          pass_filenames = false;
+        };
       };
     };
 }

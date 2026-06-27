@@ -22,7 +22,7 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer rows.Close()
+		defer func() { _ = rows.Close() }()
 
 		var bodies []string
 		for rows.Next() {
@@ -39,7 +39,7 @@ func main() {
 		}
 
 		for _, body := range bodies {
-			fmt.Fprintln(w, body)
+			_, _ = fmt.Fprintln(w, body)
 		}
 	})
 
