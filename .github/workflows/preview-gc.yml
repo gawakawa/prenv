@@ -1,0 +1,74 @@
+name: "Preview – GC"
+
+on:
+  schedule:
+    - cron: "0 20 * * *" # 05:00 JST daily
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    name: Discover stale environments
+    runs-on: ubuntu-latest
+    environment: pr
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+    outputs:
+      prs: ${{ steps.prs.outputs.json }}
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+      - name: Resolve stale PR list
+        id: prs
+        env:
+          GCS_BUCKET: ${{ vars.GCS_BUCKET }}
+        run: |
+          : "${GCS_BUCKET:?GCS_BUCKET environment variable is not set — see README setup step 4}"
+          THRESHOLD=$(date -u -d '3 days ago' '+%Y-%m-%dT%H:%M:%SZ')
+          json=$(
+            gcloud storage objects list "gs://${GCS_BUCKET}/pr/**" \
+              --format="json(name,updated)" \
+              | jq -r --arg t "$THRESHOLD" \
+                  '.[] | select(.updated < $t) | .name' \
+              | sed -nE 's#^pr/([0-9]+)/.*#\1#p' \
+              | sort -u \
+              | jq -Rcs '[split("\n")[] | select(length > 0)]'
+          )
+          echo "json=${json}" >> "$GITHUB_OUTPUT"
+
+  gc:
+    name: GC PR #${{ matrix.pr }}
+    needs: discover
+    if: needs.discover.outputs.prs != '[]'
+    runs-on: ubuntu-latest
+    environment: pr
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      pull-requests: write
+    concurrency:
+      group: prenv-${{ matrix.pr }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        pr: ${{ fromJson(needs.discover.outputs.prs) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Tear down preview environment
+        uses: ./.github/actions/teardown-pr
+        with:
+          pr: ${{ matrix.pr }}
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          gcs_bucket: ${{ vars.GCS_BUCKET }}
+          wif_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+          gh_token: ${{ github.token }}
