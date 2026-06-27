@@ -30,9 +30,10 @@ jobs:
         run: |
           : "${GCS_BUCKET:?GCS_BUCKET environment variable is not set — see README setup step 4}"
           THRESHOLD=$(date -u -d '3 days ago' '+%Y-%m-%dT%H:%M:%SZ')
+          raw=$(gcloud storage objects list "gs://${GCS_BUCKET}/pr/**" --format="json(name,updated)" 2>/dev/null) || raw='[]'
+          [ -n "$raw" ] || raw='[]'
           json=$(
-            gcloud storage objects list "gs://${GCS_BUCKET}/pr/**" \
-              --format="json(name,updated)" \
+            printf '%s' "$raw" \
               | jq -r --arg t "$THRESHOLD" \
                   '.[] | select(.updated < $t) | .name' \
               | sed -nE 's#^pr/([0-9]+)/.*#\1#p' \
