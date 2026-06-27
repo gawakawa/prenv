@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	run "cloud.google.com/go/run/apiv2"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -14,6 +16,12 @@ func main() {
 	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	runClient, err := run.NewServicesClient(context.Background())
+	if err != nil {
+		log.Printf("monitoring disabled: %v", err)
+		runClient = nil
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +48,20 @@ func main() {
 
 		for _, body := range bodies {
 			_, _ = fmt.Fprintln(w, body)
+		}
+
+		if runClient != nil {
+			_, _ = fmt.Fprintln(w)
+			envs, err := listEnvironments(r.Context(), runClient)
+			if err != nil {
+				log.Printf("list environments: %v", err)
+				_, _ = fmt.Fprintf(w, "monitoring unavailable: %v\n", err)
+			} else {
+				for _, env := range envs {
+					_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+						env.Name, env.Status, env.CommitSHA, env.URL, env.UpdatedAt)
+				}
+			}
 		}
 	})
 
