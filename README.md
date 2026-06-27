@@ -8,7 +8,7 @@ A Google Cloud version of the preview environment setup in [this blog post](http
 
 ```
 .
-├── app/                    sample Go app
+├── backend/                sample Go app
 ├── terraform/env/pr/
 │   ├── base/               one-time foundation (apply once locally)
 │   └── ephemeral/          per-PR environment (managed by CI)

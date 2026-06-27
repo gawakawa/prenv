@@ -43,7 +43,7 @@ jobs:
         run: |
           {
             echo "host=${AR_REPO%%/*}"
-            echo "ref=${AR_REPO}/app:${HEAD_SHA}"
+            echo "ref=${AR_REPO}/backend:${HEAD_SHA}"
             echo "db_ref=${AR_REPO}/db:${HEAD_SHA}"
           } >> "$GITHUB_OUTPUT"
 
@@ -59,10 +59,10 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
 
-      - name: Build and push app image
+      - name: Build and push backend image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
-          context: app
+          context: backend
           push: true
           tags: ${{ steps.image.outputs.ref }}
 
