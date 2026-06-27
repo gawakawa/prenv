@@ -51,7 +51,6 @@ jobs:
     timeout-minutes: 15
     permissions:
       id-token: write
-      pull-requests: write
     concurrency:
       group: prenv-${{ matrix.pr }}
       cancel-in-progress: false
@@ -72,4 +71,3 @@ jobs:
           gcs_bucket: ${{ vars.GCS_BUCKET }}
           wif_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SA }}
-          gh_token: ${{ github.token }}

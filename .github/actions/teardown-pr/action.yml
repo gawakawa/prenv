@@ -17,9 +17,6 @@ inputs:
   service_account:
     description: "Deploy service account"
     required: true
-  gh_token:
-    description: "Token for gh pr comment"
-    required: true
 
 runs:
   using: "composite"
@@ -55,11 +52,3 @@ runs:
         : "${TF_VAR_project_id:?project_id input is not set — see README setup step 4}"
         tofu destroy -auto-approve
 
-    - name: Update PR comment
-      shell: bash
-      env:
-        GH_TOKEN: ${{ inputs.gh_token }}
-        PR_NUMBER: ${{ inputs.pr }}
-      run: |
-        body=$(printf "## ✅ Preview environment torn down\n\nPR #%s environment destroyed.\n" "$PR_NUMBER")
-        gh pr comment "$PR_NUMBER" --edit-last --create-if-none --body "$body" || true
