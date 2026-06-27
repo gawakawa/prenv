@@ -18,19 +18,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var runClient *run.ServicesClient
-	var gcpProject, gcpRegion string
+	type monitoringConfig struct {
+		client  *run.ServicesClient
+		project string
+		region  string
+	}
+	var monitoring *monitoringConfig
 	if project := os.Getenv("GCP_PROJECT_ID"); project != "" {
-		gcpProject = project
-		gcpRegion = os.Getenv("REGION")
-		if gcpRegion == "" {
-			gcpRegion = "asia-northeast1"
+		region := os.Getenv("REGION")
+		if region == "" {
+			region = "asia-northeast1"
 		}
 		client, err := run.NewServicesClient(context.Background())
 		if err != nil {
 			log.Fatal(err)
 		}
-		runClient = client
+		monitoring = &monitoringConfig{client, project, region}
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -59,8 +62,8 @@ func main() {
 			_, _ = fmt.Fprintln(w, body)
 		}
 
-		if runClient != nil {
-			envs, err := listEnvironments(r.Context(), runClient, gcpProject, gcpRegion)
+		if monitoring != nil {
+			envs, err := listEnvironments(r.Context(), monitoring.client, monitoring.project, monitoring.region)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
