@@ -2,8 +2,7 @@ package main
 
 import (
 	"cmp"
-	"encoding/json"
-	"net/http"
+	"context"
 	"path"
 	"slices"
 	"strconv"
@@ -16,12 +15,12 @@ import (
 )
 
 type Environment struct {
-	PRNumber  int    `json:"pr_number"`
-	Name      string `json:"name"`
-	URL       string `json:"url"`
-	Status    string `json:"status"`
-	CommitSHA string `json:"commit_sha"`
-	UpdatedAt string `json:"updated_at"`
+	PRNumber  int
+	Name      string
+	URL       string
+	Status    string
+	CommitSHA string
+	UpdatedAt string
 }
 
 func parsePRNumber(name string) (int, bool) {
@@ -88,31 +87,27 @@ func toEnvironment(svc *runpb.Service) (Environment, bool) {
 	}, true
 }
 
-func environmentsHandler(client *run.ServicesClient, project, region string) http.HandlerFunc {
+func listEnvironments(ctx context.Context, client *run.ServicesClient, project, region string) ([]Environment, error) {
 	parent := "projects/" + project + "/locations/" + region
-	return func(w http.ResponseWriter, r *http.Request) {
-		it := client.ListServices(r.Context(), &runpb.ListServicesRequest{Parent: parent})
+	it := client.ListServices(ctx, &runpb.ListServicesRequest{Parent: parent})
 
-		var envs []Environment
-		for {
-			svc, err := it.Next()
-			if err == iterator.Done {
-				break
-			}
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if env, ok := toEnvironment(svc); ok {
-				envs = append(envs, env)
-			}
+	var envs []Environment
+	for {
+		svc, err := it.Next()
+		if err == iterator.Done {
+			break
 		}
-
-		slices.SortFunc(envs, func(a, b Environment) int {
-			return cmp.Compare(a.PRNumber, b.PRNumber)
-		})
-
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(envs)
+		if err != nil {
+			return nil, err
+		}
+		if env, ok := toEnvironment(svc); ok {
+			envs = append(envs, env)
+		}
 	}
+
+	slices.SortFunc(envs, func(a, b Environment) int {
+		return cmp.Compare(a.PRNumber, b.PRNumber)
+	})
+
+	return envs, nil
 }

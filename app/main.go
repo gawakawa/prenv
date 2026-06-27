@@ -18,6 +18,21 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var runClient *run.ServicesClient
+	var gcpProject, gcpRegion string
+	if project := os.Getenv("GCP_PROJECT_ID"); project != "" {
+		gcpProject = project
+		gcpRegion = os.Getenv("REGION")
+		if gcpRegion == "" {
+			gcpRegion = "asia-northeast1"
+		}
+		client, err := run.NewServicesClient(context.Background())
+		if err != nil {
+			log.Fatal(err)
+		}
+		runClient = client
+	}
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query("SELECT body FROM messages ORDER BY id")
 		if err != nil {
@@ -43,19 +58,20 @@ func main() {
 		for _, body := range bodies {
 			_, _ = fmt.Fprintln(w, body)
 		}
-	})
 
-	if project := os.Getenv("GCP_PROJECT_ID"); project != "" {
-		region := os.Getenv("REGION")
-		if region == "" {
-			region = "asia-northeast1"
+		if runClient != nil {
+			envs, err := listEnvironments(r.Context(), runClient, gcpProject, gcpRegion)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			_, _ = fmt.Fprintln(w)
+			for _, env := range envs {
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+					env.Name, env.Status, env.CommitSHA, env.URL, env.UpdatedAt)
+			}
 		}
-		client, err := run.NewServicesClient(context.Background())
-		if err != nil {
-			log.Fatal(err)
-		}
-		http.Handle("GET /environments", environmentsHandler(client, project, region))
-	}
+	})
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
