@@ -70,16 +70,12 @@ func toEnvironment(svc *runpb.Service) (Environment, bool) {
 		return Environment{}, false
 	}
 
-	containers := svc.GetTemplate().GetContainers()
 	var image string
-	for _, c := range containers {
+	for _, c := range svc.GetTemplate().GetContainers() {
 		if c.GetName() == "app" {
 			image = c.GetImage()
 			break
 		}
-	}
-	if image == "" && len(containers) > 0 {
-		image = containers[0].GetImage()
 	}
 
 	return Environment{
