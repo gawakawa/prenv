@@ -98,9 +98,12 @@ In GitHub → Issues → Labels, create a label named `preview`.
 
 ## Usage
 
-Add the `preview` label to a PR. GitHub Actions will:
-1. Build the Docker image from `app/` and push it to Artifact Registry.
-2. Run `tofu apply` in `terraform/env/pr/ephemeral/` to deploy a Cloud Run service.
-3. Post the `*.run.app` preview URL as a PR comment.
+### Created
 
-Close the PR and Actions tears the environment down automatically. Stale environments (state not updated in 3+ days) are also swept by the daily GC cron. Docker images in Artifact Registry are garbage-collected server-side by the cleanup policy (default: delete after 7 days).
+- the `preview` label is added to a PR.
+
+### Destroyed
+
+- the PR is closed.
+- the teardown workflow is run manually.
+- its state has been idle for 3+ days (swept by the daily GC).
