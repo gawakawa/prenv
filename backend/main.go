@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 
+	run "cloud.google.com/go/run/apiv2"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -20,6 +22,26 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	runClient, err := run.NewServicesClient(context.Background())
+	if err != nil {
+		log.Printf("monitoring disabled: %v", err)
+		runClient = nil
+	}
+
+	http.HandleFunc("GET /api/environments", func(w http.ResponseWriter, r *http.Request) {
+		if runClient == nil {
+			http.Error(w, "monitoring unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		envs, err := listEnvironments(r.Context(), runClient)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(envs)
+	})
 
 	http.HandleFunc("GET /api/messages", func(w http.ResponseWriter, r *http.Request) {
 		rows, err := db.Query("SELECT id, body FROM messages ORDER BY id")
