@@ -6,12 +6,17 @@ A Google Cloud version of the preview environment setup in [this blog post](http
 
 ## Structure
 
-- `terraform/env/pr/base/` — one-time foundation: state bucket, APIs, Workload Identity Federation, deploy service account, IAP access, Artifact Registry, IAP OAuth secrets. Apply **once locally**.
-- `terraform/env/pr/ephemeral/` — per-PR preview environment: one Cloud Run service. Applied/destroyed automatically by GitHub Actions.
-- `app/` — minimal sample app (Go HTTP server) with Dockerfile.
-- `.github/workflows/deploy-prenv.yml` — builds and deploys a preview when the `preview` label is added to a PR.
-- `.github/workflows/teardown-prenv.yml` — destroys the preview when the PR is closed or manually triggered.
-- `.github/workflows/gc-prenv.yml` — daily GC of stale environments (state not updated in 3+ days).
+```
+.
+├── app/                    sample Go app
+├── terraform/env/pr/
+│   ├── base/               one-time foundation (apply once locally)
+│   └── ephemeral/          per-PR environment (managed by CI)
+└── .github/workflows/
+    ├── deploy-prenv.yml    deploy on `preview` label
+    ├── teardown-prenv.yml  destroy on PR close or manual trigger
+    └── gc-prenv.yml        daily GC of stale environments
+```
 
 ## One-time setup
 
