@@ -9,6 +9,8 @@ _: {
           google-cloud-sdk
           opentofu
           terraform-docs
+          pnpm_10
+          nodejs_24
         ]);
     in
     {
