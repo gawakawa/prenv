@@ -30,11 +30,11 @@ type Environment struct {
 }
 
 func parsePRNumber(name string) (int, bool) {
-	const prefix = "prenv-pr-"
-	if !strings.HasPrefix(name, prefix) {
+	rest, ok := strings.CutPrefix(name, "prenv-pr-")
+	if !ok {
 		return 0, false
 	}
-	n, err := strconv.Atoi(name[len(prefix):])
+	n, err := strconv.Atoi(rest)
 	if err != nil {
 		return 0, false
 	}
@@ -45,12 +45,10 @@ func parseCommitSHA(image string) string {
 	if strings.Contains(image, "@") {
 		return ""
 	}
-	lastSlash := strings.LastIndex(image, "/")
-	lastColon := strings.LastIndex(image, ":")
-	if lastColon <= lastSlash {
-		return ""
+	if i := strings.LastIndex(image, ":"); i > strings.LastIndex(image, "/") {
+		return image[i+1:]
 	}
-	return image[lastColon+1:]
+	return ""
 }
 
 func mapStatus(state runpb.Condition_State) string {
