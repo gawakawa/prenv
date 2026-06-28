@@ -21,12 +21,12 @@ const (
 )
 
 type Environment struct {
-	PRNumber  int
-	Name      string
-	URL       string
-	Status    string
-	CommitSHA string
-	UpdatedAt string
+	PRNumber  int    `json:"pr_number"`
+	Name      string `json:"name"`
+	URL       string `json:"url"`
+	Status    string `json:"status"`
+	CommitSHA string `json:"commit_sha"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 func parsePRNumber(name string) (int, bool) {
@@ -75,7 +75,7 @@ func toEnvironment(svc *runpb.Service) (Environment, bool) {
 
 	var image string
 	for _, c := range svc.GetTemplate().GetContainers() {
-		if c.GetName() == "app" {
+		if c.GetName() == "backend" {
 			image = c.GetImage()
 			break
 		}
@@ -94,7 +94,7 @@ func toEnvironment(svc *runpb.Service) (Environment, bool) {
 func listEnvironments(ctx context.Context, client *run.ServicesClient) ([]Environment, error) {
 	it := client.ListServices(ctx, &runpb.ListServicesRequest{Parent: parent})
 
-	var envs []Environment
+	envs := []Environment{}
 	for {
 		svc, err := it.Next()
 		if err == iterator.Done {

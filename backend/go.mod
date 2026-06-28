@@ -1,4 +1,4 @@
-module github.com/gawakawa/prenv/app
+module github.com/gawakawa/prenv/backend
 
 go 1.25.0
 

@@ -8,7 +8,7 @@ updates:
       default-days: 7
 
   - package-ecosystem: "gomod"
-    directory: "/app"
+    directory: "/backend"
     schedule:
       interval: "weekly"
     cooldown:
@@ -18,7 +18,7 @@ updates:
       semver-patch-days: 3
 
   - package-ecosystem: "docker"
-    directories: ["/app", "/db"]
+    directories: ["/backend", "/db"]
     schedule:
       interval: "weekly"
     cooldown:
