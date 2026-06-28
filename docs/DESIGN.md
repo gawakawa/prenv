@@ -18,7 +18,7 @@ PR ごとに Cloud Run 上へ隔離されたプレビュー環境を作り、PR 
 
 ## キャッシュ戦略
 
-共通: bake で app/db を並列 build。イメージ名 `<AR_REPO>/<owner>/<repo>/{app,db}:<content-hash>`
+共通: bake で backend/db を並列 build。イメージ名 `<AR_REPO>/<owner>/<repo>/{backend,db}:<content-hash>`
 (AR は複数 repo 共有のため owner/repo をパス分離し混在・誤再利用を防ぐ)。
 content-hash タグ = context + Dockerfile の内容ハッシュ。commit から再計算でき追跡可。
 

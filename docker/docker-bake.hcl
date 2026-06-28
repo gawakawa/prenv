@@ -1,16 +1,16 @@
 variable "AR_REPO" {}
 variable "GH_REPO" {}
-variable "APP_TAG" { default = "latest" }
-variable "DB_TAG"  { default = "latest" }
+variable "BACKEND_TAG" { default = "latest" }
+variable "DB_TAG"      { default = "latest" }
 
 group "default" {
-  targets = ["app", "db"]
+  targets = ["backend", "db"]
 }
 
-target "app" {
+target "backend" {
   context    = "backend"
-  dockerfile = "../docker/app/Dockerfile"
-  tags       = ["${AR_REPO}/${GH_REPO}/backend:${APP_TAG}"]
+  dockerfile = "../docker/backend/Dockerfile"
+  tags       = ["${AR_REPO}/${GH_REPO}/backend:${BACKEND_TAG}"]
   cache-from = ["type=registry,ref=${AR_REPO}/${GH_REPO}/backend:buildcache"]
   cache-to   = ["type=registry,ref=${AR_REPO}/${GH_REPO}/backend:buildcache,mode=max,image-manifest=true,oci-mediatypes=true"]
 }
