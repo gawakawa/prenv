@@ -43,11 +43,15 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           repo="${GH_REPO,,}"
+          app_tag=$(git rev-parse "HEAD:app" "HEAD:docker/app/Dockerfile" | sha256sum | cut -c1-16)
+          db_tag=$(git rev-parse  "HEAD:db"  "HEAD:docker/db/Dockerfile"  | sha256sum | cut -c1-16)
           {
             echo "host=${AR_REPO%%/*}"
             echo "gh_repo=${repo}"
-            echo "ref=${AR_REPO}/${repo}/app:${HEAD_SHA}"
-            echo "db_ref=${AR_REPO}/${repo}/db:${HEAD_SHA}"
+            echo "app_tag=${app_tag}"
+            echo "db_tag=${db_tag}"
+            echo "ref=${AR_REPO}/${repo}/app:${app_tag}"
+            echo "db_ref=${AR_REPO}/${repo}/db:${db_tag}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Setup OpenTofu
@@ -65,18 +69,34 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
+      - name: Determine build targets
+        id: targets
+        env:
+          APP_REF: ${{ steps.image.outputs.ref }}
+          DB_REF: ${{ steps.image.outputs.db_ref }}
+        run: |
+          t=()
+          docker buildx imagetools inspect "$APP_REF" >/dev/null 2>&1 || t+=("app")
+          docker buildx imagetools inspect "$DB_REF"  >/dev/null 2>&1 || t+=("db")
+          {
+            echo 'list<<EOF'
+            printf '%s\n' "${t[@]}"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Build and push images
+        if: steps.targets.outputs.list != ''
         uses: docker/bake-action@6614cfa25eff9a0b2b2697efb0b6159e7680d584 # v7.2.0
         with:
           source: .
           files: docker-bake.hcl
-          targets: default
+          targets: ${{ steps.targets.outputs.list }}
           push: true
         env:
           AR_REPO: ${{ vars.AR_REPO }}
           GH_REPO: ${{ steps.image.outputs.gh_repo }}
-          APP_TAG: ${{ github.event.pull_request.head.sha }}
-          DB_TAG: ${{ github.event.pull_request.head.sha }}
+          APP_TAG: ${{ steps.image.outputs.app_tag }}
+          DB_TAG: ${{ steps.image.outputs.db_tag }}
 
       - name: Terraform init
         working-directory: terraform/env/pr/ephemeral
