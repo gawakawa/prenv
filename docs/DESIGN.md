@@ -20,14 +20,13 @@ PR ごとに Cloud Run 上へ隔離されたプレビュー環境を作り、PR 
 
 共通: bake で app/db を並列 build。イメージ名 `<AR_REPO>/<owner>/<repo>/{app,db}:<content-hash>`
 (AR は複数 repo 共有のため owner/repo をパス分離し混在・誤再利用を防ぐ)。
-content-hash タグ = context + Dockerfile の内容ハッシュ。既存なら build ごとスキップ、
-commit から再計算でき追跡可。
+content-hash タグ = context + Dockerfile の内容ハッシュ。commit から再計算でき追跡可。
 
 ### アプリ
 
 - 層1 registry buildcache で依存層(go mod download 等)を全 PR 共有の固定タグで再利用。
 - 本体 build(go build / next build)はソース変更で毎回再実行。増分キャッシュは
-  使い捨てランナーで持ち越せず、無変更スキップ(content-hash)が現実解。
+  使い捨てランナーで持ち越せない。
 
 ### DB
 

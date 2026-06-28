@@ -69,32 +69,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
-      - name: Determine build targets
-        id: targets
-        env:
-          APP_REF: ${{ steps.image.outputs.ref }}
-          DB_REF: ${{ steps.image.outputs.db_ref }}
-        run: |
-          t=()
-          docker buildx imagetools inspect "$APP_REF" >/dev/null 2>&1 &
-          pid_app=$!
-          docker buildx imagetools inspect "$DB_REF"  >/dev/null 2>&1 &
-          pid_db=$!
-          wait $pid_app || t+=("app")
-          wait $pid_db  || t+=("db")
-          {
-            echo 'list<<EOF'
-            printf '%s\n' "${t[@]}"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
-
       - name: Build and push images
-        if: steps.targets.outputs.list != ''
         uses: docker/bake-action@6614cfa25eff9a0b2b2697efb0b6159e7680d584 # v7.2.0
         with:
           source: .
           files: docker/docker-bake.hcl
-          targets: ${{ steps.targets.outputs.list }}
           push: true
         env:
           AR_REPO: ${{ vars.AR_REPO }}
