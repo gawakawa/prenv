@@ -39,12 +39,15 @@ jobs:
         id: image
         env:
           AR_REPO: ${{ vars.AR_REPO }}
+          GH_REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
+          repo="${GH_REPO,,}"
           {
             echo "host=${AR_REPO%%/*}"
-            echo "ref=${AR_REPO}/app:${HEAD_SHA}"
-            echo "db_ref=${AR_REPO}/db:${HEAD_SHA}"
+            echo "gh_repo=${repo}"
+            echo "ref=${AR_REPO}/${repo}/app:${HEAD_SHA}"
+            echo "db_ref=${AR_REPO}/${repo}/db:${HEAD_SHA}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Setup OpenTofu
@@ -71,7 +74,9 @@ jobs:
           push: true
         env:
           AR_REPO: ${{ vars.AR_REPO }}
-          TAG: ${{ github.event.pull_request.head.sha }}
+          GH_REPO: ${{ steps.image.outputs.gh_repo }}
+          APP_TAG: ${{ github.event.pull_request.head.sha }}
+          DB_TAG: ${{ github.event.pull_request.head.sha }}
 
       - name: Terraform init
         working-directory: terraform/env/pr/ephemeral
