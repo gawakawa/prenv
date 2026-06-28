@@ -9,4 +9,4 @@
 
 ## Updating dependencies
 
-After changing dependencies, run `nix flake check` from the repo root and copy the correct hash from the `got:` line in the error output into `../flakes/checks.nix`.
+After changing dependencies, run `nix flake check` from the repo root and copy the correct hash from the `got:` line in the error output into `flakes/checks.nix` (repo root).
