@@ -12,7 +12,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "cd ${CLAUDE_PROJECT_DIR} && nix flake check && pnpm lint"
+						"command": "cd ${CLAUDE_PROJECT_DIR}/.. && nix flake check && cd ${CLAUDE_PROJECT_DIR} && pnpm lint"
 					}
 				]
 			}

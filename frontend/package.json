@@ -1,15 +1,11 @@
 {
-	"name": "pnpm",
+	"name": "frontend",
 	"version": "1.0.0",
-	"description": "",
 	"type": "module",
-	"main": "index.js",
 	"scripts": {
 		"lint": "oxlint --type-aware",
 		"test": "vitest run"
 	},
-	"keywords": [],
-	"author": "",
 	"license": "ISC",
 	"packageManager": "pnpm@10.19.0",
 	"devDependencies": {
