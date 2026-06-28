@@ -3,7 +3,7 @@ name: "Update pnpm deps hash"
 on:
   pull_request:
     paths:
-      - "pnpm-lock.yaml"
+      - "frontend/pnpm-lock.yaml"
 
 permissions:
   contents: write
@@ -53,7 +53,7 @@ jobs:
             pkgs.fetchPnpmDeps {
               pname = "pnpm-project-deps";
               version = "1.0.0";
-              src = ./.;
+              src = ./frontend;
               pnpm = pkgs.pnpm_10;
               fetcherVersion = 3;
               hash = "";
