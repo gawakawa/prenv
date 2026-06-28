@@ -76,8 +76,12 @@ jobs:
           DB_REF: ${{ steps.image.outputs.db_ref }}
         run: |
           t=()
-          docker buildx imagetools inspect "$APP_REF" >/dev/null 2>&1 || t+=("app")
-          docker buildx imagetools inspect "$DB_REF"  >/dev/null 2>&1 || t+=("db")
+          docker buildx imagetools inspect "$APP_REF" >/dev/null 2>&1 &
+          pid_app=$!
+          docker buildx imagetools inspect "$DB_REF"  >/dev/null 2>&1 &
+          pid_db=$!
+          wait $pid_app || t+=("app")
+          wait $pid_db  || t+=("db")
           {
             echo 'list<<EOF'
             printf '%s\n' "${t[@]}"
