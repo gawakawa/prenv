@@ -7,5 +7,8 @@ export default defineConfig({
 	preview: {
 		host: true,
 		port: 8080,
+		proxy: {
+			'/api': { target: 'http://localhost:8081' },
+		},
 	},
 });
