@@ -10,7 +10,7 @@ _: {
           opentofu
           terraform-docs
           pnpm_10
-          nodejs_24
+          nodejs_26
         ]);
     in
     {

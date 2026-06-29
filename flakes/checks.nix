@@ -3,7 +3,7 @@ _: {
     { pkgs, ... }:
     let
       pnpm = pkgs.pnpm_10;
-      nodejs = pkgs.nodejs_24;
+      nodejs = pkgs.nodejs_26;
       src = ../frontend;
 
       pnpmDeps = pkgs.fetchPnpmDeps {
