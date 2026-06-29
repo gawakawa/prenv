@@ -61,6 +61,13 @@ resource "google_cloud_run_v2_service" "preview" {
         cpu_idle          = true
         startup_cpu_boost = true
       }
+      startup_probe {
+        tcp_socket { port = 8081 }
+        initial_delay_seconds = 5
+        period_seconds        = 5
+        timeout_seconds       = 3
+        failure_threshold     = 24
+      }
       depends_on = ["postgres"]
     }
 
