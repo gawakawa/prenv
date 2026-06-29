@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchEnvironments, EnvironmentsUnavailableError, type Environment } from '../api.ts';
 
+const GITHUB_REPO = 'gawakawa/prenv';
 const KNOWN_STATUSES = new Set(['succeeded', 'failed', 'reconciling', 'pending']);
 const statusBadgeClass = (status: string): string =>
 	KNOWN_STATUSES.has(status) ? `badge badge-${status}` : 'badge badge-unknown';
@@ -8,15 +9,24 @@ const statusBadgeClass = (status: string): string =>
 const EnvironmentRow = ({ env }: { env: Environment }) => (
 	<tr>
 		<td>
+			<a
+				className="env-link"
+				href={`https://github.com/${GITHUB_REPO}/pull/${env.pr_number}`}
+				target="_blank"
+				rel="noreferrer"
+			>
+				#{env.pr_number}
+			</a>
+		</td>
+		<td>
 			{env.url ? (
 				<a className="env-link" href={env.url} target="_blank" rel="noreferrer">
-					#{env.pr_number}
+					{env.name}
 				</a>
 			) : (
-				`#${env.pr_number}`
+				env.name
 			)}
 		</td>
-		<td>{env.name}</td>
 		<td>
 			<span className={statusBadgeClass(env.status)}>{env.status}</span>
 		</td>
