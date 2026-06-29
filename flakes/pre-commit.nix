@@ -25,6 +25,13 @@ _: {
           files = "^terraform/env/pr/ephemeral/[^/]+\\.tf$";
           pass_filenames = false;
         };
+        oxlint = {
+          enable = true;
+          name = "oxlint";
+          entry = "${pkgs.oxlint}/bin/oxlint --type-aware";
+          files = "\\.(ts|tsx|js|jsx)$";
+          pass_filenames = false;
+        };
         workflow-timeout = {
           enable = true;
           name = "Check workflow timeout-minutes";

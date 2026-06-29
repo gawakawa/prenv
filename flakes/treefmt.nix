@@ -21,6 +21,15 @@ _: {
           enable = true;
           includes = [ "*.go" ];
         };
+        oxfmt = {
+          enable = true;
+          includes = [
+            "*.ts"
+            "*.tsx"
+            "*.js"
+            "*.jsx"
+          ];
+        };
       };
     };
   };

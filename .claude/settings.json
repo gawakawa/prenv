@@ -1,0 +1,21 @@
+{
+	"permissions": {
+		"ask": [
+			"Edit(./frontend/.oxlintrc.json)",
+			"Edit(./frontend/package.json)"
+		]
+	},
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Edit|MultiEdit|Write",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "cd ${CLAUDE_PROJECT_DIR} && nix flake check && cd ${CLAUDE_PROJECT_DIR}/frontend && pnpm lint"
+					}
+				]
+			}
+		]
+	}
+}
