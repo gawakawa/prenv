@@ -34,9 +34,24 @@ resource "google_cloud_run_v2_service" "preview" {
     }
 
     containers {
+      name  = "frontend"
+      image = var.frontend_image
+      ports { container_port = 8080 }
+      resources {
+        limits            = { cpu = "1", memory = "512Mi" }
+        cpu_idle          = true
+        startup_cpu_boost = true
+      }
+      depends_on = ["backend"]
+    }
+
+    containers {
       name  = "backend"
       image = var.image
-      ports { container_port = 8080 }
+      env {
+        name  = "PORT"
+        value = "8081"
+      }
       env {
         name  = "DATABASE_URL"
         value = "postgres://postgres@localhost:5432/app?sslmode=disable"
@@ -90,39 +105,3 @@ resource "google_cloud_run_v2_service_iam_member" "invoker" {
   member   = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-iap.iam.gserviceaccount.com"
 }
 
-resource "google_cloud_run_v2_service" "frontend" {
-  provider = google-beta
-
-  name     = "prenv-pr-${var.pr_number}-frontend"
-  project  = var.project_id
-  location = var.region
-
-  deletion_protection = false
-  launch_stage        = "BETA"
-  iap_enabled         = true
-
-  template {
-    scaling {
-      max_instance_count = 1
-    }
-
-    containers {
-      name  = "frontend"
-      image = var.frontend_image
-      ports { container_port = 8080 }
-      resources {
-        limits            = { cpu = "1", memory = "512Mi" }
-        cpu_idle          = true
-        startup_cpu_boost = true
-      }
-    }
-  }
-}
-
-resource "google_cloud_run_v2_service_iam_member" "frontend_invoker" {
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.frontend.name
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-iap.iam.gserviceaccount.com"
-}
