@@ -25,3 +25,9 @@ variable "db_image" {
   type        = string
   default     = "postgres:18-alpine"
 }
+
+variable "frontend_image" {
+  description = "Frontend container image to deploy. Defaults to a public placeholder (for teardown); replace with the built frontend image for deploy."
+  type        = string
+  default     = "us-docker.pkg.dev/cloudrun/container/hello"
+}
