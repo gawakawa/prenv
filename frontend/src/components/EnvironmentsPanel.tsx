@@ -32,7 +32,18 @@ const EnvironmentRow = ({ env }: { env: Environment }) => (
 		</td>
 		<td>
 			{env.commit_sha ? (
-				<span className="sha">{env.commit_sha.slice(0, 7)}</span>
+				env.commit_sha.length === 40 ? (
+					<a
+						className="sha env-link"
+						href={`https://github.com/${GITHUB_REPO}/commit/${env.commit_sha}`}
+						target="_blank"
+						rel="noreferrer"
+					>
+						{env.commit_sha.slice(0, 7)}
+					</a>
+				) : (
+					<span className="sha">{env.commit_sha.slice(0, 7)}</span>
+				)
 			) : (
 				<span className="sha muted">—</span>
 			)}

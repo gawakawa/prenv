@@ -125,6 +125,10 @@ body {
 	color: #6b7280;
 }
 
+a.sha {
+	color: #2563eb;
+}
+
 .muted {
 	color: #c0c0c0;
 }
