@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchEnvironments, EnvironmentsUnavailableError, type Environment } from '../api.ts';
 
 const GITHUB_REPO = 'gawakawa/prenv';
+const formatJst = (iso: string): string =>
+	Temporal.Instant.from(iso).toZonedDateTimeISO('Asia/Tokyo').toLocaleString('ja-JP');
 const KNOWN_STATUSES = new Set(['succeeded', 'failed', 'reconciling', 'pending']);
 const statusBadgeClass = (status: string): string =>
 	KNOWN_STATUSES.has(status) ? `badge badge-${status}` : 'badge badge-unknown';
@@ -48,7 +50,7 @@ const EnvironmentRow = ({ env }: { env: Environment }) => (
 				<span className="sha muted">—</span>
 			)}
 		</td>
-		<td>{new Date(env.updated_at).toLocaleString()}</td>
+		<td>{formatJst(env.updated_at)}</td>
 	</tr>
 );
 
@@ -85,7 +87,7 @@ const EnvironmentsPanel = () => {
 							<th>Name</th>
 							<th>Status</th>
 							<th>Commit</th>
-							<th>Updated</th>
+							<th>Updated (JST)</th>
 						</tr>
 					</thead>
 					<tbody>
