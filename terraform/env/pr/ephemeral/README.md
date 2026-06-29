@@ -40,9 +40,7 @@ No modules.
 
 | Name | Type |
 | ---- | ---- |
-| [google-beta_google_cloud_run_v2_service.frontend](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_cloud_run_v2_service) | resource |
 | [google-beta_google_cloud_run_v2_service.preview](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_cloud_run_v2_service) | resource |
-| [google_cloud_run_v2_service_iam_member.frontend_invoker](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service_iam_member) | resource |
 | [google_cloud_run_v2_service_iam_member.invoker](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service_iam_member) | resource |
 | [google_project.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/project) | data source |
 
@@ -61,6 +59,5 @@ No modules.
 
 | Name | Description |
 | ---- | ----------- |
-| <a name="output_backend_url"></a> [backend\_url](#output\_backend\_url) | HTTPS URL of the backend preview Cloud Run service. |
-| <a name="output_url"></a> [url](#output\_url) | HTTPS URL of the frontend preview Cloud Run service. |
+| <a name="output_url"></a> [url](#output\_url) | HTTPS URL of the preview Cloud Run service. |
 <!-- END_TF_DOCS -->

@@ -11,6 +11,15 @@ PR ごとに Cloud Run 上へ隔離されたプレビュー環境を作り、PR 
   - AR イメージ … AR サーバサイド cleanup policy(age ベース、既定 7 日)。
 - インバリアント: AR 7 日 > stale sweep 3 日(使用中イメージが先に消えない)。
 
+## トポロジ
+
+プレビューは 1 つの Cloud Run マルチコンテナサービス。
+ingress = `frontend`(SPA + `/api/*` → `localhost:8081` プロキシ)、
+サイドカー = `backend`(PORT=8081)+ `postgres`(5432)。
+
+IAP Cookie はホストスコープなのでクロスオリジン呼び出し不可 → 同一オリジン必須。
+Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT=8081` を明示。
+
 ## アクセス制御
 
 - プレビューは IAP で保護。許可された identity のみアクセス可、公開(allUsers)は無し。
