@@ -1,3 +1,7 @@
+locals {
+  backend_port = 8081
+}
+
 data "google_project" "this" {
   project_id = var.project_id
 }
@@ -37,6 +41,10 @@ resource "google_cloud_run_v2_service" "preview" {
       name  = "frontend"
       image = var.frontend_image
       ports { container_port = 8080 }
+      env {
+        name  = "BACKEND_PORT"
+        value = tostring(local.backend_port)
+      }
       resources {
         limits            = { cpu = "1", memory = "512Mi" }
         cpu_idle          = true
@@ -50,7 +58,7 @@ resource "google_cloud_run_v2_service" "preview" {
       image = var.image
       env {
         name  = "PORT"
-        value = "8081"
+        value = tostring(local.backend_port)
       }
       env {
         name  = "DATABASE_URL"
@@ -62,7 +70,7 @@ resource "google_cloud_run_v2_service" "preview" {
         startup_cpu_boost = true
       }
       startup_probe {
-        tcp_socket { port = 8081 }
+        tcp_socket { port = local.backend_port }
         initial_delay_seconds = 5
         period_seconds        = 5
         timeout_seconds       = 3
