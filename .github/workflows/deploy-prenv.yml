@@ -43,15 +43,18 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           repo="${GH_REPO,,}"
-          backend_tag=$(git rev-parse "HEAD:backend" "HEAD:docker/backend/Dockerfile" | sha256sum | cut -c1-16)
-          db_tag=$(git rev-parse      "HEAD:db"      "HEAD:docker/db/Dockerfile"      | sha256sum | cut -c1-16)
+          backend_tag=$(git rev-parse  "HEAD:backend"  "HEAD:docker/backend/Dockerfile"  | sha256sum | cut -c1-16)
+          db_tag=$(git rev-parse       "HEAD:db"       "HEAD:docker/db/Dockerfile"       | sha256sum | cut -c1-16)
+          frontend_tag=$(git rev-parse "HEAD:frontend" "HEAD:docker/frontend/Dockerfile" | sha256sum | cut -c1-16)
           {
             echo "host=${AR_REPO%%/*}"
             echo "gh_repo=${repo}"
             echo "backend_tag=${backend_tag}"
             echo "db_tag=${db_tag}"
+            echo "frontend_tag=${frontend_tag}"
             echo "ref=${AR_REPO}/${repo}/backend:${backend_tag}"
             echo "db_ref=${AR_REPO}/${repo}/db:${db_tag}"
+            echo "frontend_ref=${AR_REPO}/${repo}/frontend:${frontend_tag}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Setup OpenTofu
@@ -80,6 +83,7 @@ jobs:
           GH_REPO: ${{ steps.image.outputs.gh_repo }}
           BACKEND_TAG: ${{ steps.image.outputs.backend_tag }}
           DB_TAG: ${{ steps.image.outputs.db_tag }}
+          FRONTEND_TAG: ${{ steps.image.outputs.frontend_tag }}
 
       - name: Terraform init
         working-directory: terraform/env/pr/ephemeral
@@ -96,6 +100,7 @@ jobs:
           TF_VAR_pr_number: ${{ github.event.pull_request.number }}
           TF_VAR_image: ${{ steps.image.outputs.ref }}
           TF_VAR_db_image: ${{ steps.image.outputs.db_ref }}
+          TF_VAR_frontend_image: ${{ steps.image.outputs.frontend_ref }}
         run: |
           tofu apply -auto-approve
 
