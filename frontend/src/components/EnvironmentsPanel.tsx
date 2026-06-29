@@ -1,18 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchEnvironments, EnvironmentsUnavailableError } from '../api.ts';
-import type { Environment } from '../api.ts';
+import { fetchEnvironments, EnvironmentsUnavailableError, type Environment } from '../api.ts';
 
-const statusBadgeClass = (status: string): string => {
-	const classes: Record<string, string> = {
-		succeeded: 'badge badge-succeeded',
-		failed: 'badge badge-failed',
-		reconciling: 'badge badge-reconciling',
-		pending: 'badge badge-pending',
-	};
-	return classes[status] ?? 'badge badge-unknown';
-};
-
-const formatDate = (iso: string): string => new Date(iso).toLocaleString();
+const KNOWN_STATUSES = new Set(['succeeded', 'failed', 'reconciling', 'pending']);
+const statusBadgeClass = (status: string): string =>
+	KNOWN_STATUSES.has(status) ? `badge badge-${status}` : 'badge badge-unknown';
 
 const EnvironmentRow = ({ env }: { env: Environment }) => (
 	<tr>
@@ -36,7 +27,7 @@ const EnvironmentRow = ({ env }: { env: Environment }) => (
 				<span className="sha muted">—</span>
 			)}
 		</td>
-		<td>{formatDate(env.updated_at)}</td>
+		<td>{new Date(env.updated_at).toLocaleString()}</td>
 	</tr>
 );
 
@@ -49,14 +40,12 @@ const EnvironmentsPanel = () => {
 	} = useQuery({
 		queryKey: ['environments'],
 		queryFn: fetchEnvironments,
-		retry: (_failureCount: number, err: Error) => !(err instanceof EnvironmentsUnavailableError),
+		retry: (_, err) => !(err instanceof EnvironmentsUnavailableError),
 	});
 
 	return (
 		<section className="panel">
-			<h2 className="panel-title">
-				Preview Environments{envs !== undefined ? ` (${envs.length})` : ''}
-			</h2>
+			<h2 className="panel-title">Preview Environments{envs && ` (${envs.length})`}</h2>
 			{isPending ? (
 				<p className="notice">Loading…</p>
 			) : isError ? (
