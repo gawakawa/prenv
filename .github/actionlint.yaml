@@ -1,0 +1,11 @@
+self-hosted-runner:
+  labels: []
+
+config-variables: null
+
+paths:
+  .github/workflows/deploy-prenv.yml:
+    ignore:
+      - 'unexpected key "background"'
+      - 'unexpected key "wait"'
+      - 'step must run script with "run" section or run action with "uses" section'

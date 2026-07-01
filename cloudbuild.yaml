@@ -1,0 +1,29 @@
+substitutions:
+  _IMAGE: ''   # backend | db | frontend
+  _REF: ''     # full image reference, e.g. us-docker.pkg.dev/proj/repo/backend:abc123
+  _CACHE: 'no' # 'yes' for backend and frontend
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -e
+        gcloud auth configure-docker "$${REF%%/*}" -q
+        docker buildx create --use --driver docker-container
+        set -- build "$$IMAGE" -f "docker/$$IMAGE/Dockerfile" -t "$$REF" --push
+        if [ "$$CACHE" = yes ]; then
+          c="$${REF%:*}:buildcache"
+          set -- "$$@" \
+            --cache-from "type=registry,ref=$$c" \
+            --cache-to "type=registry,ref=$$c,mode=max,image-manifest=true,oci-mediatypes=true"
+        fi
+        docker buildx "$$@"
+    env:
+      - 'IMAGE=${_IMAGE}'
+      - 'REF=${_REF}'
+      - 'CACHE=${_CACHE}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

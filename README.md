@@ -68,6 +68,7 @@ Add these as **Environment variables**:
 |---|---|
 | `WIF_PROVIDER` | `cd terraform/env/pr/base && tofu output -raw wif_provider_name` |
 | `DEPLOY_SA` | `cd terraform/env/pr/base && tofu output -raw deploy_service_account_email` |
+| `BUILD_SA` | `cd terraform/env/pr/base && tofu output -raw build_service_account_email` |
 | `GCP_PROJECT_ID` | your Google Cloud project ID |
 | `GCS_BUCKET` | `cd terraform/env/pr/base && tofu output -raw state_bucket_name` |
 | `AR_REPO` | `cd terraform/env/pr/base && tofu output -raw repository_url` |

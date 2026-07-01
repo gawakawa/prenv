@@ -17,3 +17,8 @@ output "deploy_service_account_email" {
   description = "Deploy service account email. Set as the `pr` environment variable DEPLOY_SA."
   value       = google_service_account.deployer.email
 }
+
+output "build_service_account_email" {
+  description = "Cloud Build service account email. Set as the `pr` environment variable BUILD_SA."
+  value       = google_service_account.cloudbuild.email
+}

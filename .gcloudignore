@@ -1,0 +1,12 @@
+.git/
+.gitignore
+.github/
+.claude/
+.envrc
+*.md
+docs/
+flake.nix
+flake.lock
+flakes/
+terraform/
+frontend/node_modules/

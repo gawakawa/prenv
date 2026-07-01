@@ -20,6 +20,9 @@ jobs:
     environment: pr
     timeout-minutes: 15
     if: github.event.label.name == 'preview'
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      BUILD_SA: ${{ vars.BUILD_SA }}
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -33,7 +36,6 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SA }}
-          token_format: access_token
 
       - name: Resolve image reference
         id: image
@@ -47,7 +49,6 @@ jobs:
           db_tag=$(git rev-parse       "HEAD:db"       "HEAD:docker/db/Dockerfile"       | sha256sum | cut -c1-16)
           frontend_tag=$(git rev-parse "HEAD:frontend" "HEAD:docker/frontend/Dockerfile" | sha256sum | cut -c1-16)
           {
-            echo "host=${AR_REPO%%/*}"
             echo "gh_repo=${repo}"
             echo "backend_tag=${backend_tag}"
             echo "db_tag=${db_tag}"
@@ -62,28 +63,29 @@ jobs:
         with:
           tofu_wrapper: false
 
-      - name: Log in to Artifact Registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          registry: ${{ steps.image.outputs.host }}
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
-
-      - name: Build and push images
-        uses: docker/bake-action@6614cfa25eff9a0b2b2697efb0b6159e7680d584 # v7.2.0
-        with:
-          source: .
-          files: docker/docker-bake.hcl
-          push: true
+      - name: Build backend image
+        id: build-backend
+        background: true
         env:
-          AR_REPO: ${{ vars.AR_REPO }}
-          GH_REPO: ${{ steps.image.outputs.gh_repo }}
-          BACKEND_TAG: ${{ steps.image.outputs.backend_tag }}
-          DB_TAG: ${{ steps.image.outputs.db_tag }}
-          FRONTEND_TAG: ${{ steps.image.outputs.frontend_tag }}
+          REF: ${{ steps.image.outputs.ref }}
+        run: .github/scripts/build-image.sh backend "$REF"
+
+      - name: Build db image
+        id: build-db
+        background: true
+        env:
+          REF: ${{ steps.image.outputs.db_ref }}
+        run: .github/scripts/build-image.sh db "$REF"
+
+      - name: Build frontend image
+        id: build-frontend
+        background: true
+        env:
+          REF: ${{ steps.image.outputs.frontend_ref }}
+        run: .github/scripts/build-image.sh frontend "$REF"
+
+      - name: Wait for image builds
+        wait: [build-backend, build-db, build-frontend]
 
       - name: Terraform init
         working-directory: terraform/env/pr/ephemeral

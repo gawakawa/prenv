@@ -64,10 +64,54 @@ resource "google_storage_bucket_iam_member" "deployer_tfstate" {
   member = "serviceAccount:${google_service_account.deployer.email}"
 }
 
-# Deploy SA needs to push Docker images to the preview Artifact Registry repo.
-# The repo lives in env/pr/base, so we grant project-level writer to avoid cross-module refs.
-resource "google_project_iam_member" "deployer_ar_writer" {
+
+resource "google_project_iam_member" "deployer_cloudbuild_editor" {
+  project = var.project_id
+  role    = "roles/cloudbuild.builds.editor"
+  member  = "serviceAccount:${google_service_account.deployer.email}"
+}
+
+# Deploy SA uploads source to the Cloud Build staging bucket.
+resource "google_storage_bucket_iam_member" "deployer_cloudbuild_staging" {
+  bucket = google_storage_bucket.cloudbuild.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.deployer.email}"
+}
+
+resource "google_project_iam_member" "deployer_ar_reader" {
+  project = var.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${google_service_account.deployer.email}"
+}
+
+resource "google_project_iam_member" "deployer_serviceusage" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:${google_service_account.deployer.email}"
+}
+
+resource "google_service_account" "cloudbuild" {
+  account_id   = "prenv-cloudbuild"
+  project      = var.project_id
+  display_name = "prenv Cloud Build SA"
+  description  = "Runs Cloud Build steps for per-PR preview image builds."
+}
+
+# Deploy SA must be able to act as the build SA when submitting builds.
+resource "google_service_account_iam_member" "deployer_actAs_cloudbuild" {
+  service_account_id = google_service_account.cloudbuild.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.deployer.email}"
+}
+
+resource "google_project_iam_member" "cloudbuild_ar_writer" {
   project = var.project_id
   role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${google_service_account.deployer.email}"
+  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+resource "google_project_iam_member" "cloudbuild_log_writer" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
 }
