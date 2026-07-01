@@ -1,9 +1,9 @@
 substitutions:
   _AR_REPO: ''
   _GH_REPO: ''
-  _BACKEND_TAG: ''
-  _DB_TAG: ''
-  _FRONTEND_TAG: ''
+  _IMAGE: ''   # backend | db | frontend
+  _TAG: ''
+  _CACHE: 'no' # 'yes' for backend and frontend
 
 steps:
   - name: 'gcr.io/cloud-builders/docker'
@@ -11,15 +11,24 @@ steps:
     args:
       - -c
       - |
-        gcloud auth configure-docker "${_AR_REPO%%/*}" -q
+        set -e
+        gcloud auth configure-docker "$${AR_REPO%%/*}" -q
         docker buildx create --use --driver docker-container
-        docker buildx bake -f docker/docker-bake.hcl --push
+        ref="$$AR_REPO/$$GH_REPO/$$IMAGE:$$TAG"
+        set -- build "$$IMAGE" -f "docker/$$IMAGE/Dockerfile" -t "$$ref" --push
+        if [ "$$CACHE" = yes ]; then
+          c="$$AR_REPO/$$GH_REPO/$$IMAGE:buildcache"
+          set -- "$$@" \
+            --cache-from "type=registry,ref=$$c" \
+            --cache-to "type=registry,ref=$$c,mode=max,image-manifest=true,oci-mediatypes=true"
+        fi
+        docker buildx "$$@"
     env:
       - 'AR_REPO=${_AR_REPO}'
       - 'GH_REPO=${_GH_REPO}'
-      - 'BACKEND_TAG=${_BACKEND_TAG}'
-      - 'DB_TAG=${_DB_TAG}'
-      - 'FRONTEND_TAG=${_FRONTEND_TAG}'
+      - 'IMAGE=${_IMAGE}'
+      - 'TAG=${_TAG}'
+      - 'CACHE=${_CACHE}'
 
 options:
   logging: CLOUD_LOGGING_ONLY
