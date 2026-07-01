@@ -34,6 +34,7 @@ jobs:
     name: Tear down PR #${{ needs.resolve.outputs.pr }}
     needs: resolve
     permissions:
+      contents: read
       id-token: write
     uses: ./.github/workflows/destroy-prenv.yml
     with:
