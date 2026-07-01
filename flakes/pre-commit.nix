@@ -9,7 +9,11 @@ _: {
         actionlint.enable = true;
         zizmor = {
           enable = true;
-          args = [ "--offline" ];
+          # pass_filenames=false: always audit the full directory so that files
+          # using new step syntax (background:/wait:) don't leave zizmor with
+          # no valid inputs (zizmor 1.25.2 schema predates the 2026-06-25 GA).
+          pass_filenames = false;
+          entry = "${pkgs.zizmor}/bin/zizmor --offline .github/workflows/";
         };
         hadolint.enable = true;
         tflint.enable = true;
