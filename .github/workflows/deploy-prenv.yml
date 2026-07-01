@@ -20,6 +20,9 @@ jobs:
     environment: pr
     timeout-minutes: 15
     if: github.event.label.name == 'preview'
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      BUILD_SA: ${{ vars.BUILD_SA }}
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -64,34 +67,22 @@ jobs:
         id: build-backend
         background: true
         env:
-          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          BUILD_SA: ${{ vars.BUILD_SA }}
-          AR_REPO: ${{ vars.AR_REPO }}
-          GH_REPO: ${{ steps.image.outputs.gh_repo }}
           REF: ${{ steps.image.outputs.ref }}
-        run: .github/scripts/build-image.sh backend "$REF" yes
+        run: .github/scripts/build-image.sh backend "$REF"
 
       - name: Build db image
         id: build-db
         background: true
         env:
-          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          BUILD_SA: ${{ vars.BUILD_SA }}
-          AR_REPO: ${{ vars.AR_REPO }}
-          GH_REPO: ${{ steps.image.outputs.gh_repo }}
           REF: ${{ steps.image.outputs.db_ref }}
-        run: .github/scripts/build-image.sh db "$REF" no
+        run: .github/scripts/build-image.sh db "$REF"
 
       - name: Build frontend image
         id: build-frontend
         background: true
         env:
-          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          BUILD_SA: ${{ vars.BUILD_SA }}
-          AR_REPO: ${{ vars.AR_REPO }}
-          GH_REPO: ${{ steps.image.outputs.gh_repo }}
           REF: ${{ steps.image.outputs.frontend_ref }}
-        run: .github/scripts/build-image.sh frontend "$REF" yes
+        run: .github/scripts/build-image.sh frontend "$REF"
 
       - name: Wait for image builds
         wait: [build-backend, build-db, build-frontend]
