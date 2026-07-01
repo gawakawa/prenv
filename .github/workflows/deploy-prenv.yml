@@ -60,21 +60,38 @@ jobs:
         with:
           tofu_wrapper: false
 
-      - name: Build and push images
+      - name: Build backend image
+        id: build-backend
+        background: true
         env:
           PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           BUILD_SA: ${{ vars.BUILD_SA }}
           AR_REPO: ${{ vars.AR_REPO }}
           GH_REPO: ${{ steps.image.outputs.gh_repo }}
-          BACKEND_TAG: ${{ steps.image.outputs.backend_tag }}
-          DB_TAG: ${{ steps.image.outputs.db_tag }}
-          FRONTEND_TAG: ${{ steps.image.outputs.frontend_tag }}
-        run: |
-          gcloud builds submit . \
-            --project="${PROJECT_ID}" \
-            --config=cloudbuild.yaml \
-            --service-account="projects/${PROJECT_ID}/serviceAccounts/${BUILD_SA}" \
-            --substitutions="_AR_REPO=${AR_REPO},_GH_REPO=${GH_REPO},_BACKEND_TAG=${BACKEND_TAG},_DB_TAG=${DB_TAG},_FRONTEND_TAG=${FRONTEND_TAG}"
+          REF: ${{ steps.image.outputs.ref }}
+        run: .github/scripts/build-image.sh backend "$REF" yes
+
+      - name: Build db image
+        id: build-db
+        background: true
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          BUILD_SA: ${{ vars.BUILD_SA }}
+          AR_REPO: ${{ vars.AR_REPO }}
+          GH_REPO: ${{ steps.image.outputs.gh_repo }}
+          REF: ${{ steps.image.outputs.db_ref }}
+        run: .github/scripts/build-image.sh db "$REF" no
+
+      - name: Build frontend image
+        id: build-frontend
+        background: true
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          BUILD_SA: ${{ vars.BUILD_SA }}
+          AR_REPO: ${{ vars.AR_REPO }}
+          GH_REPO: ${{ steps.image.outputs.gh_repo }}
+          REF: ${{ steps.image.outputs.frontend_ref }}
+        run: .github/scripts/build-image.sh frontend "$REF" yes
 
       - name: Terraform init
         working-directory: terraform/env/pr/ephemeral
