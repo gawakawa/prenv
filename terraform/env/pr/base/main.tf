@@ -10,6 +10,7 @@ locals {
     "artifactregistry.googleapis.com",
     "iap.googleapis.com",
     "secretmanager.googleapis.com",
+    "cloudbuild.googleapis.com",
   ]
 }
 
@@ -65,6 +66,18 @@ resource "google_artifact_registry_repository" "preview" {
       older_than = var.image_max_age
     }
   }
+
+  depends_on = [google_project_service.core]
+}
+
+resource "google_storage_bucket" "cloudbuild" {
+  name     = "${var.project_id}_cloudbuild"
+  project  = var.project_id
+  location = var.region
+
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  force_destroy               = false
 
   depends_on = [google_project_service.core]
 }

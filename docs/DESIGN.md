@@ -31,6 +31,10 @@ Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT
 (AR は複数 repo 共有のため owner/repo をパス分離し混在・誤再利用を防ぐ)。
 content-hash タグ = context + Dockerfile の内容ハッシュ。commit から再計算でき追跡可。
 
+build は GitHub Actions ランナーからの `gcloud builds submit` 経由で Cloud Build 上で実行する。
+`docker-bake.hcl` と registry buildcache(`:buildcache` mode=max)はそのまま流用。
+`--service-account` で専用 build SA(`prenv-cloudbuild`)を指定し deploy SA と権限を分離。
+
 ### アプリ
 
 - 層1 registry buildcache で依存層(go mod download 等)を全 PR 共有の固定タグで再利用。

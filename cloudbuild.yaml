@@ -1,0 +1,31 @@
+substitutions:
+  _AR_REPO: ''
+  _GH_REPO: ''
+  _BACKEND_TAG: ''
+  _DB_TAG: ''
+  _FRONTEND_TAG: ''
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        host="${_AR_REPO%%/*}"
+        token=$(curl -sf \
+          -H "Metadata-Flavor: Google" \
+          "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
+          | grep -o '"access_token":"[^"]*"' \
+          | cut -d'"' -f4)
+        printf '%s' "${token}" | docker login -u oauth2accesstoken --password-stdin "${host}"
+        docker buildx create --use --driver docker-container
+        docker buildx bake -f docker/docker-bake.hcl --push
+    env:
+      - 'AR_REPO=${_AR_REPO}'
+      - 'GH_REPO=${_GH_REPO}'
+      - 'BACKEND_TAG=${_BACKEND_TAG}'
+      - 'DB_TAG=${_DB_TAG}'
+      - 'FRONTEND_TAG=${_FRONTEND_TAG}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
