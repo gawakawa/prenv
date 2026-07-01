@@ -1,8 +1,6 @@
 substitutions:
-  _AR_REPO: ''
-  _GH_REPO: ''
   _IMAGE: ''   # backend | db | frontend
-  _TAG: ''
+  _REF: ''     # full image reference, e.g. us-docker.pkg.dev/proj/repo/backend:abc123
   _CACHE: 'no' # 'yes' for backend and frontend
 
 steps:
@@ -12,22 +10,19 @@ steps:
       - -c
       - |
         set -e
-        gcloud auth configure-docker "$${AR_REPO%%/*}" -q
+        gcloud auth configure-docker "$${REF%%/*}" -q
         docker buildx create --use --driver docker-container
-        ref="$$AR_REPO/$$GH_REPO/$$IMAGE:$$TAG"
-        set -- build "$$IMAGE" -f "docker/$$IMAGE/Dockerfile" -t "$$ref" --push
+        set -- build "$$IMAGE" -f "docker/$$IMAGE/Dockerfile" -t "$$REF" --push
         if [ "$$CACHE" = yes ]; then
-          c="$$AR_REPO/$$GH_REPO/$$IMAGE:buildcache"
+          c="$${REF%:*}:buildcache"
           set -- "$$@" \
             --cache-from "type=registry,ref=$$c" \
             --cache-to "type=registry,ref=$$c,mode=max,image-manifest=true,oci-mediatypes=true"
         fi
         docker buildx "$$@"
     env:
-      - 'AR_REPO=${_AR_REPO}'
-      - 'GH_REPO=${_GH_REPO}'
       - 'IMAGE=${_IMAGE}'
-      - 'TAG=${_TAG}'
+      - 'REF=${_REF}'
       - 'CACHE=${_CACHE}'
 
 options:
