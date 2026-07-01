@@ -27,9 +27,11 @@ Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT
 
 ## キャッシュ戦略
 
-共通: bake で backend/db を並列 build。イメージ名 `<AR_REPO>/<owner>/<repo>/{backend,db}:<content-hash>`
+共通: イメージ名 `<AR_REPO>/<owner>/<repo>/{backend,db,frontend}:<content-hash>`
 (AR は複数 repo 共有のため owner/repo をパス分離し混在・誤再利用を防ぐ)。
 content-hash タグ = context + Dockerfile の内容ハッシュ。commit から再計算でき追跡可。
+image ごとに独立 build し、content-hash タグで既存確認して不要な build を省く。
+3 image の build は並列実行(CI オーケストレーション側で制御)。
 
 ### アプリ
 
