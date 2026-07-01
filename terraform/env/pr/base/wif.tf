@@ -78,6 +78,12 @@ resource "google_storage_bucket_iam_member" "deployer_cloudbuild_staging" {
   member = "serviceAccount:${google_service_account.deployer.email}"
 }
 
+resource "google_project_iam_member" "deployer_ar_reader" {
+  project = var.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${google_service_account.deployer.email}"
+}
+
 resource "google_service_account" "cloudbuild" {
   account_id   = "prenv-cloudbuild"
   project      = var.project_id
