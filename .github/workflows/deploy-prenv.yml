@@ -93,6 +93,10 @@ jobs:
           REF: ${{ steps.image.outputs.frontend_ref }}
         run: .github/scripts/build-image.sh frontend "$REF" yes
 
+      - name: Wait for image builds
+        wait: [build-backend, build-db, build-frontend]
+        run: echo "All builds complete"
+
       - name: Terraform init
         working-directory: terraform/env/pr/ephemeral
         env:

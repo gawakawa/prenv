@@ -84,6 +84,12 @@ resource "google_project_iam_member" "deployer_ar_reader" {
   member  = "serviceAccount:${google_service_account.deployer.email}"
 }
 
+resource "google_project_iam_member" "deployer_serviceusage" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:${google_service_account.deployer.email}"
+}
+
 resource "google_service_account" "cloudbuild" {
   account_id   = "prenv-cloudbuild"
   project      = var.project_id
