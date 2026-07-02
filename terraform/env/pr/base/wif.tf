@@ -78,10 +78,12 @@ resource "google_storage_bucket_iam_member" "deployer_cloudbuild_staging" {
   member = "serviceAccount:${google_service_account.deployer.email}"
 }
 
-resource "google_project_iam_member" "deployer_ar_reader" {
-  project = var.project_id
-  role    = "roles/artifactregistry.reader"
-  member  = "serviceAccount:${google_service_account.deployer.email}"
+resource "google_artifact_registry_repository_iam_member" "deployer_ar_reader" {
+  project    = var.project_id
+  location   = google_artifact_registry_repository.preview.location
+  repository = google_artifact_registry_repository.preview.repository_id
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${google_service_account.deployer.email}"
 }
 
 resource "google_project_iam_member" "deployer_serviceusage" {
@@ -104,10 +106,12 @@ resource "google_service_account_iam_member" "deployer_actAs_cloudbuild" {
   member             = "serviceAccount:${google_service_account.deployer.email}"
 }
 
-resource "google_project_iam_member" "cloudbuild_ar_writer" {
-  project = var.project_id
-  role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${google_service_account.cloudbuild.email}"
+resource "google_artifact_registry_repository_iam_member" "cloudbuild_ar_writer" {
+  project    = var.project_id
+  location   = google_artifact_registry_repository.preview.location
+  repository = google_artifact_registry_repository.preview.repository_id
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${google_service_account.cloudbuild.email}"
 }
 
 resource "google_project_iam_member" "cloudbuild_log_writer" {
