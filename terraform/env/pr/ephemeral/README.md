@@ -29,7 +29,6 @@ tofu apply -var="project_id=my-project" -var="pr_number=123"
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_google"></a> [google](#provider\_google) | 6.50.0 |
 | <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | 6.50.0 |
 
 ## Modules
@@ -41,8 +40,6 @@ No modules.
 | Name | Type |
 | ---- | ---- |
 | [google-beta_google_cloud_run_v2_service.preview](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_cloud_run_v2_service) | resource |
-| [google_cloud_run_v2_service_iam_member.invoker](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloud_run_v2_service_iam_member) | resource |
-| [google_project.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/project) | data source |
 
 ## Inputs
 
