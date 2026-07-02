@@ -49,10 +49,6 @@ jobs:
           db_tag=$(git rev-parse       "HEAD:db"       "HEAD:docker/db/Dockerfile"       | sha256sum | cut -c1-16)
           frontend_tag=$(git rev-parse "HEAD:frontend" "HEAD:docker/frontend/Dockerfile" | sha256sum | cut -c1-16)
           {
-            echo "gh_repo=${repo}"
-            echo "backend_tag=${backend_tag}"
-            echo "db_tag=${db_tag}"
-            echo "frontend_tag=${frontend_tag}"
             echo "ref=${AR_REPO}/${repo}/backend:${backend_tag}"
             echo "db_ref=${AR_REPO}/${repo}/db:${db_tag}"
             echo "frontend_ref=${AR_REPO}/${repo}/frontend:${frontend_tag}"
