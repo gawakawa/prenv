@@ -103,4 +103,11 @@ resource "google_cloud_run_v2_service" "preview" {
       }
     }
   }
+
+  # The Cloud Run Admin API doesn't persist launch_stage — it's a request-only
+  # directive, and GET always reports back the stage actually required by the
+  # service's features. That makes launch_stage a permanent GA/BETA diff.
+  lifecycle {
+    ignore_changes = [launch_stage]
+  }
 }
