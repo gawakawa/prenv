@@ -23,9 +23,9 @@ Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT
 ## アクセス制御
 
 - プレビューは IAP で保護。許可された identity のみアクセス可、公開(allUsers)は無し。
-- CI は WIF で deploy SA を impersonate。単一 repo 限定・最小権限。
-- IAP を通すための IAM は、PR ごとではなく最初に一度だけ付与する。デプロイ直後の権限反映待ちで
-  起きる 403 を防ぎ、CI(deploy SA)に Cloud Run の IAM 変更権限を与えないため。
+- base はプロジェクトの所有者(インフラ)が管理し、ephemeral は利用者(開発)が管理する。
+  運用主体が違うため `terraform/base/` と `terraform/env/pr/` に分ける。
+- IAP に必要な IAM は所有者側(base)が付与し、利用者側(ephemeral)には与えない。
 
 ## キャッシュ戦略
 
