@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	cloud.google.com/go/run v1.21.0
 	github.com/jackc/pgx/v5 v5.10.0
-	google.golang.org/api v0.285.0
+	google.golang.org/api v0.286.0
 )
 
 require (
