@@ -24,6 +24,8 @@ Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT
 
 - プレビューは IAP で保護。許可された identity のみアクセス可、公開(allUsers)は無し。
 - CI は WIF で deploy SA を impersonate。単一 repo 限定・最小権限。
+- IAP を通すための IAM は、PR ごとではなく最初に一度だけ付与する。デプロイ直後の権限反映待ちで
+  起きる 403 を防ぎ、CI(deploy SA)に Cloud Run の IAM 変更権限を与えないため。
 
 ## キャッシュ戦略
 
