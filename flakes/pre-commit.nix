@@ -17,10 +17,10 @@ _: {
         };
         hadolint.enable = true;
         tflint.enable = true;
-        terraform-docs-pr-base = {
+        terraform-docs-base = {
           enable = true;
-          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr/base";
-          files = "^terraform/env/pr/base/[^/]+\\.tf$";
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/base";
+          files = "^terraform/base/[^/]+\\.tf$";
           pass_filenames = false;
         };
         terraform-docs-pr-ephemeral = {

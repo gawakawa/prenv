@@ -1,4 +1,4 @@
-# terraform/env/pr/base
+# terraform/base
 
 Shared resources for PR preview environments. Applied once manually — not per-PR.
 
@@ -9,7 +9,7 @@ Shared resources for PR preview environments. Applied once manually — not per-
 ## Usage
 
 ```bash
-cd terraform/env/pr/base
+cd terraform/base
 # region and repository_id have defaults; only project_id is required
 tofu init
 tofu apply -var project_id=<your-project-id>
