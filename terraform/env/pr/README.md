@@ -1,4 +1,4 @@
-# terraform/env/pr/ephemeral
+# terraform/env/pr
 
 Per-PR preview environment. Deploys one Cloud Run service (`prenv-pr-<N>`) per PR and protects it
 behind Identity-Aware Proxy (IAP); only members granted IAP access can reach its `.run.app` URL.
