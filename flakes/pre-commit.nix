@@ -23,10 +23,10 @@ _: {
           files = "^terraform/base/[^/]+\\.tf$";
           pass_filenames = false;
         };
-        terraform-docs-pr-ephemeral = {
+        terraform-docs-env-pr = {
           enable = true;
-          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr/ephemeral";
-          files = "^terraform/env/pr/ephemeral/[^/]+\\.tf$";
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr";
+          files = "^terraform/env/pr/[^/]+\\.tf$";
           pass_filenames = false;
         };
         oxlint = {
