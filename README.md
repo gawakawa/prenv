@@ -9,9 +9,9 @@ A Google Cloud version of the preview environment setup in [this blog post](http
 ```
 .
 ├── backend/                sample Go app
-├── terraform/env/pr/
+├── terraform/
 │   ├── base/               one-time foundation (apply once locally)
-│   └── ephemeral/          per-PR environment (managed by CI)
+│   └── env/pr/             per-PR environment (managed by CI)
 └── .github/workflows/
     ├── deploy-prenv.yml    deploy on `preview` label
     ├── teardown-prenv.yml  destroy on PR close or manual trigger
@@ -27,14 +27,14 @@ A Google Cloud version of the preview environment setup in [this blog post](http
    ```
    https://iap.googleapis.com/v1/oauth/clientIds/<CLIENT_ID>:handleRedirect
    ```
-   Note the Client ID and Client secret for `terraform/env/pr/base/terraform.tfvars`.
+   Note the Client ID and Client secret for `terraform/base/terraform.tfvars`.
 3. **Bootstrap the IAP service agent**: Console → Security → Identity-Aware Proxy. Toggle IAP on for any Cloud Run service once.
 4. Complete steps 1–3 before running `tofu apply`.
 
 ### 2. Apply the base foundation
 
 ```bash
-cd terraform/env/pr/base
+cd terraform/base
 cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars — fill in all values (see terraform.tfvars.example)
 tofu init
@@ -66,11 +66,12 @@ Add these as **Environment variables**:
 
 | Variable | Source |
 |---|---|
-| `WIF_PROVIDER` | `cd terraform/env/pr/base && tofu output -raw wif_provider_name` |
-| `DEPLOY_SA` | `cd terraform/env/pr/base && tofu output -raw deploy_service_account_email` |
+| `WIF_PROVIDER` | `cd terraform/base && tofu output -raw wif_provider_name` |
+| `DEPLOY_SA` | `cd terraform/base && tofu output -raw deploy_service_account_email` |
+| `BUILD_SA` | `cd terraform/base && tofu output -raw build_service_account_email` |
 | `GCP_PROJECT_ID` | your Google Cloud project ID |
-| `GCS_BUCKET` | `cd terraform/env/pr/base && tofu output -raw state_bucket_name` |
-| `AR_REPO` | `cd terraform/env/pr/base && tofu output -raw repository_url` |
+| `GCS_BUCKET` | `cd terraform/base && tofu output -raw state_bucket_name` |
+| `AR_REPO` | `cd terraform/base && tofu output -raw repository_url` |
 
 ### 5. Create the `preview` label
 

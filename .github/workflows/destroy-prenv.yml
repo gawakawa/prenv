@@ -37,14 +37,14 @@ jobs:
         with:
           tofu_wrapper: false
       - name: Terraform init
-        working-directory: terraform/env/pr/ephemeral
+        working-directory: terraform/env/pr
         env:
           PR_NUMBER: ${{ inputs.pr }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
       - name: Terraform destroy
-        working-directory: terraform/env/pr/ephemeral
+        working-directory: terraform/env/pr
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ inputs.pr }}

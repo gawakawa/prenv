@@ -23,13 +23,17 @@ Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT
 ## アクセス制御
 
 - プレビューは IAP で保護。許可された identity のみアクセス可、公開(allUsers)は無し。
-- CI は WIF で deploy SA を impersonate。単一 repo 限定・最小権限。
+- base はプロジェクトの所有者(インフラ)が管理し、ephemeral は利用者(開発)が管理する。
+  運用主体が違うため `terraform/base/` と `terraform/env/pr/` に分ける。
+- IAP に必要な IAM は所有者側(base)が付与し、利用者側(ephemeral)には与えない。
 
 ## キャッシュ戦略
 
-共通: bake で backend/db を並列 build。イメージ名 `<AR_REPO>/<owner>/<repo>/{backend,db}:<content-hash>`
+共通: イメージ名 `<AR_REPO>/<owner>/<repo>/{backend,db,frontend}:<content-hash>`
 (AR は複数 repo 共有のため owner/repo をパス分離し混在・誤再利用を防ぐ)。
 content-hash タグ = context + Dockerfile の内容ハッシュ。commit から再計算でき追跡可。
+image ごとに独立 build し、content-hash タグで既存確認して不要な build を省く。
+3 image の build は並列実行(CI オーケストレーション側で制御)。
 
 ### アプリ
 

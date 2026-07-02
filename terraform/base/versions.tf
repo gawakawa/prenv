@@ -8,7 +8,9 @@ terraform {
     }
   }
 
-  # State is stored in the shared GCS bucket under prefix "env/pr/base".
+  # State is stored in the shared GCS bucket under prefix "env/pr/base" — an
+  # opaque identifier kept for state continuity, independent of this module's
+  # directory location.
   # This module is applied once manually (not by CI).
   # bucket must match var.state_bucket_name (managed in this module).
   backend "gcs" {

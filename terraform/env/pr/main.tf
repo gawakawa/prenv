@@ -2,10 +2,6 @@ locals {
   backend_port = 8081
 }
 
-data "google_project" "this" {
-  project_id = var.project_id
-}
-
 resource "google_cloud_run_v2_service" "preview" {
   # iap_enabled is a Beta-only field, so this resource uses the google-beta provider.
   provider = google-beta
@@ -107,16 +103,11 @@ resource "google_cloud_run_v2_service" "preview" {
       }
     }
   }
-}
 
-# Grant the IAP service agent permission to invoke the Cloud Run service.
-# End users do not call the service directly; IAP proxies the request on
-# their behalf after verifying identity via OAuth.
-resource "google_cloud_run_v2_service_iam_member" "invoker" {
-  project  = var.project_id
-  location = var.region
-  name     = google_cloud_run_v2_service.preview.name
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-iap.iam.gserviceaccount.com"
+  # The Cloud Run Admin API doesn't persist launch_stage — it's a request-only
+  # directive, and GET always reports back the stage actually required by the
+  # service's features. That makes launch_stage a permanent GA/BETA diff.
+  lifecycle {
+    ignore_changes = [launch_stage]
+  }
 }
-

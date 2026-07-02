@@ -7,9 +7,10 @@ terraform {
       version = "~> 6.0"
     }
     # iap_enabled on google_cloud_run_v2_service is a Beta-only field.
+    # >= 7.15 fixes a scaling-block permadiff (magic-modules #15808, #15904).
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 6.0"
+      version = "~> 7.15"
     }
   }
 
@@ -17,7 +18,7 @@ terraform {
   #   tofu init -backend-config="bucket=<state_bucket_name>" \
   #             -backend-config="prefix=pr/<PR_NUMBER>"
   # Variable interpolation is not supported in backend blocks.
-  # bucket must match var.state_bucket_name in terraform/env/pr/base.
-  # Shared PR preview resources (Artifact Registry repo) live in terraform/env/pr/base/.
+  # bucket must match var.state_bucket_name in terraform/base.
+  # Shared PR preview resources (Artifact Registry repo) live in terraform/base/.
   backend "gcs" {}
 }
