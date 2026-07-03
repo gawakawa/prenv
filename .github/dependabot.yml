@@ -30,10 +30,3 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
-
-  - package-ecosystem: "terraform"
-    directories: ["/terraform/base", "/terraform/env/pr"]
-    schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 7
