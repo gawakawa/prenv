@@ -20,6 +20,24 @@ ingress = `frontend`(SPA + `/api/*` → `localhost:8081` プロキシ)、
 IAP Cookie はホストスコープなのでクロスオリジン呼び出し不可 → 同一オリジン必須。
 Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT=8081` を明示。
 
+## ユースケース
+
+prenv は、複数リポジトリが 1 つの管理用 project を共有して使う前提で構成する。
+
+Terraform は `terraform/modules/preview` を module として公開する。
+各 repo の `terraform/env/pr` は
+`source = "git::https://github.com/gawakawa/prenv.git//terraform/modules/preview?ref=<REF>"`
+でこれを呼び出し、自身のコンテナ構成だけを渡す。
+
+GitHub Actions は deploy/destroy のロジックを `*-prenv.yml` として prenv 内に置き、
+`workflow_call` の reusable workflow にする。
+各 repo は `uses: gawakawa/prenv/.github/workflows/*-prenv.yml@<REF>` で参照する、
+薄いトリガー workflow だけを持つ。
+
+onboard 手順は `.claude/skills/setup-prenv` が自動化する。
+tofu output から 6 つの値を取得し、GitHub 環境変数の設定、`preview` label の作成、
+上記 2 つを呼び出す最小構成のファイル一式の配置までを行う。
+
 ## アクセス制御
 
 - プレビューは IAP で保護。許可された identity のみアクセス可、公開(allUsers)は無し。
