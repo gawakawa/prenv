@@ -20,6 +20,12 @@ ingress = `frontend`(SPA + `/api/*` → `localhost:8081` プロキシ)、
 IAP Cookie はホストスコープなのでクロスオリジン呼び出し不可 → 同一オリジン必須。
 Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT=8081` を明示。
 
+## DB
+
+DB が必要なアプリは module 組み込みの Postgres sidecar でのみ提供する。
+ephemeral なプレビュー環境ごとに Cloud SQL 等の永続インスタンスを用意するのは
+コストに見合わない。
+
 ## ユースケース
 
 prenv は、複数リポジトリが 1 つの管理用 project を共有して使う前提で構成する。

@@ -7,10 +7,13 @@ module "preview" {
   pr_number  = var.pr_number
   repo       = var.repo
 
+  # Set to true (the module default) if your app needs the built-in Postgres
+  # sidecar — see the module's README for the depends_on/DATABASE_URL contract.
+  enable_db_sidecar = false
+
   # Exactly one container must set `port` (Cloud Run ingress). Every
   # `depends_on` target must define `startup_probe`, or Cloud Run rejects the
-  # deploy with a 400. See the module's README for the full schema and the
-  # built-in `postgres` sidecar contract (enable_db_sidecar, default true).
+  # deploy with a 400. See the module's README for the full schema.
   containers = [
     {
       name  = "app"
