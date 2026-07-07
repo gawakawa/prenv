@@ -74,10 +74,14 @@ resource "google_project_iam_member" "deployer_cloudbuild_editor" {
   member  = "serviceAccount:${google_service_account.deployer.email}"
 }
 
-# Deploy SA uploads source to the Cloud Build staging bucket.
+# Deploy SA uploads source to the Cloud Build staging bucket. `gcloud builds
+# submit --service-account=...` needs bucket-level roles/storage.admin here —
+# roles/storage.objectAdmin alone fails with "forbidden from accessing the
+# bucket" (a known gap: Google's own docs don't state a storage role for this
+# path, but this is the role that resolves the error in practice).
 resource "google_storage_bucket_iam_member" "deployer_cloudbuild_staging" {
   bucket = google_storage_bucket.cloudbuild.name
-  role   = "roles/storage.objectAdmin"
+  role   = "roles/storage.admin"
   member = "serviceAccount:${google_service_account.deployer.email}"
 }
 
