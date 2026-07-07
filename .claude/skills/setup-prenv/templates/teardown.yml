@@ -1,0 +1,42 @@
+name: "Teardown (trigger)"
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Resolve PR number
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    outputs:
+      pr: ${{ github.event.pull_request.number || steps.branch.outputs.pr }}
+    steps:
+      - name: Resolve PR from branch
+        id: branch
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state all --json number --jq '.[0].number // empty')
+          : "${pr:?No PR found for branch ${BRANCH}}"
+          echo "pr=${pr}" >> "$GITHUB_OUTPUT"
+
+  teardown:
+    name: Tear down PR #${{ needs.resolve.outputs.pr }}
+    needs: resolve
+    permissions:
+      contents: read
+      id-token: write
+    # Pin to a SHA or tag before relying on this in production.
+    uses: gawakawa/prenv/.github/workflows/destroy-prenv.yml@main
+    with:
+      pr: ${{ needs.resolve.outputs.pr }}

@@ -1,0 +1,21 @@
+name: "Deploy (trigger)"
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event.label.name == 'preview'
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    # Pin to a SHA or tag before relying on this in production.
+    uses: gawakawa/prenv/.github/workflows/deploy-prenv.yml@main
+    with:
+      pr: ${{ github.event.pull_request.number }}
+      head_sha: ${{ github.event.pull_request.head.sha }}
