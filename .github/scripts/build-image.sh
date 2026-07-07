@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Submit a single-image Cloud Build job, skipping if the image already exists.
-# Usage: build-image.sh <name> <context> <dockerfile> <ref> <cache: yes|no>
-#   name       - logical image name, used only for log messages
+# Usage: build-image.sh <context> <dockerfile> <ref> <cache: yes|no>
 #   context    - Docker build context directory
 #   dockerfile - path to the Dockerfile
 #   ref        - full image reference, e.g. us-docker.pkg.dev/proj/repo/backend:abc123
@@ -10,14 +9,13 @@
 # Required env: PROJECT_ID, BUILD_SA
 set -euo pipefail
 
-NAME=$1
-CONTEXT=$2
-DOCKERFILE=$3
-REF=$4
-CACHE=$5
+CONTEXT=$1
+DOCKERFILE=$2
+REF=$3
+CACHE=$4
 
 if gcloud artifacts docker images describe "$REF" --quiet >/dev/null 2>&1; then
-  echo "skip $NAME ($REF already exists)"
+  echo "skip $REF (already exists)"
   exit 0
 fi
 

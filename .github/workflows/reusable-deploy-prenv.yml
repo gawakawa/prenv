@@ -68,7 +68,7 @@ jobs:
           REF: ${{ steps.ref.outputs.ref }}
         run: |
           .github/scripts/build-image.sh \
-            "${{ matrix.image.name }}" "${{ matrix.image.context }}" "${{ matrix.image.dockerfile }}" \
+            "${{ matrix.image.context }}" "${{ matrix.image.dockerfile }}" \
             "$REF" "${{ matrix.image.cache && 'yes' || 'no' }}"
 
   deploy:
