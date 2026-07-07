@@ -1,0 +1,20 @@
+name: "Deploy (trigger)"
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event.label.name == 'preview'
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    uses: ./.github/workflows/deploy-prenv.yml
+    with:
+      pr: ${{ github.event.pull_request.number }}
+      head_sha: ${{ github.event.pull_request.head.sha }}

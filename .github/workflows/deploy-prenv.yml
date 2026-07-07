@@ -1,17 +1,19 @@
 name: "Deploy prenv"
 
 on:
-  pull_request:
-    types: [labeled]
-
-concurrency:
-  group: prenv-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  workflow_call:
+    inputs:
+      pr:
+        description: "PR number"
+        required: true
+        type: string
+      head_sha:
+        description: "Head commit SHA to deploy"
+        required: true
+        type: string
 
 permissions:
   contents: read
-  id-token: write
-  pull-requests: write
 
 jobs:
   deploy:
@@ -19,7 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: pr
     timeout-minutes: 15
-    if: github.event.label.name == 'preview'
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    concurrency:
+      group: prenv-${{ inputs.pr }}
+      cancel-in-progress: false
     env:
       PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       BUILD_SA: ${{ vars.BUILD_SA }}
@@ -27,7 +35,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ inputs.head_sha }}
           persist-credentials: false
 
       - name: Authenticate to Google Cloud
@@ -42,7 +50,6 @@ jobs:
         env:
           AR_REPO: ${{ vars.AR_REPO }}
           GH_REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           repo="${GH_REPO,,}"
           backend_tag=$(git rev-parse  "HEAD:backend"  "HEAD:docker/backend/Dockerfile"  | sha256sum | cut -c1-16)
@@ -86,7 +93,7 @@ jobs:
       - name: Terraform init
         working-directory: terraform/env/pr
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ inputs.pr }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
@@ -95,7 +102,7 @@ jobs:
         working-directory: terraform/env/pr
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
-          TF_VAR_pr_number: ${{ github.event.pull_request.number }}
+          TF_VAR_pr_number: ${{ inputs.pr }}
           TF_VAR_image: ${{ steps.image.outputs.ref }}
           TF_VAR_db_image: ${{ steps.image.outputs.db_ref }}
           TF_VAR_frontend_image: ${{ steps.image.outputs.frontend_ref }}
@@ -110,9 +117,9 @@ jobs:
       - name: Comment preview URL on PR
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ inputs.pr }}
           PREVIEW_URL: ${{ steps.url.outputs.url }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_SHA: ${{ inputs.head_sha }}
         run: |
           body=$(printf "## 🚀 Preview environment\n\n**URL:** %s\n\nDeployed from commit \`%s\`\n\n> Close the PR to tear down (stale environments are also GC'd daily).\n" "$PREVIEW_URL" "$HEAD_SHA")
           gh pr comment "$PR_NUMBER" --edit-last --create-if-none --body "$body"
