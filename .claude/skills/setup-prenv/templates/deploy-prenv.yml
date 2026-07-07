@@ -15,7 +15,7 @@ jobs:
       id-token: write
       pull-requests: write
     # Pinned to a prenv commit SHA. Bump when adopting newer prenv changes.
-    uses: gawakawa/prenv/.github/workflows/reusable-deploy-prenv.yml@8dce312c1efd86c42adbc638d3580c9261ec3aa9
+    uses: gawakawa/prenv/.github/workflows/reusable-deploy-prenv.yml@feea0950ab5771874cf3ede17f57ce2345b86c0a
     with:
       pr: ${{ github.event.pull_request.number }}
       head_sha: ${{ github.event.pull_request.head.sha }}

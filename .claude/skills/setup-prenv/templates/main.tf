@@ -1,6 +1,6 @@
 module "preview" {
   # Pinned to a prenv commit SHA. Bump when adopting newer prenv changes.
-  source = "git::https://github.com/gawakawa/prenv.git//terraform/modules/preview?ref=8dce312c1efd86c42adbc638d3580c9261ec3aa9"
+  source = "git::https://github.com/gawakawa/prenv.git//terraform/modules/preview?ref=feea0950ab5771874cf3ede17f57ce2345b86c0a"
 
   project_id = var.project_id
   region     = var.region
