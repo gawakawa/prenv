@@ -4,6 +4,7 @@ module "preview" {
   project_id = var.project_id
   region     = var.region
   pr_number  = var.pr_number
+  repo       = var.repo
   db_image   = var.db_image
 
   containers = [

@@ -14,6 +14,11 @@ variable "pr_number" {
   type        = number
 }
 
+variable "repo" {
+  description = "GitHub repository in OWNER/REPO format. Disambiguates the Cloud Run service name when multiple repositories share this managed project."
+  type        = string
+}
+
 variable "image" {
   description = "Container image to deploy. Defaults to a public placeholder; replace with your app image."
   type        = string

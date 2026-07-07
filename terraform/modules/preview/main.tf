@@ -21,13 +21,18 @@ locals {
   }
 
   containers_all = var.enable_db_sidecar ? concat(var.containers, [local.postgres_container]) : var.containers
+
+  # Cloud Run service names are unique per project+region and can't contain
+  # "/", so the OWNER/REPO identity is flattened into a single label —
+  # otherwise two repos' PR numbers collide when sharing one managed project.
+  repo_slug = lower(replace(var.repo, "/[^a-zA-Z0-9]+/", "-"))
 }
 
 resource "google_cloud_run_v2_service" "preview" {
   # iap_enabled is a Beta-only field, so this resource uses the google-beta provider.
   provider = google-beta
 
-  name     = "prenv-pr-${var.pr_number}"
+  name     = "${local.repo_slug}-pr-${var.pr_number}"
   project  = var.project_id
   location = var.region
 

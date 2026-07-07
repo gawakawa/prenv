@@ -14,6 +14,21 @@ variable "pr_number" {
   type        = number
 }
 
+variable "repo" {
+  description = "GitHub repository in OWNER/REPO format. Disambiguates the Cloud Run service name when multiple repositories share this managed project."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[^/]+/[^/]+$", var.repo))
+    error_message = "repo must be in OWNER/REPO form."
+  }
+
+  validation {
+    condition     = length("${lower(replace(var.repo, "/[^a-zA-Z0-9]+/", "-"))}-pr-${var.pr_number}") <= 63
+    error_message = "The Cloud Run service name derived from repo and pr_number (\"<owner>-<repo>-pr-<N>\") must be 63 characters or fewer. Shorten the repository name."
+  }
+}
+
 variable "containers" {
   description = <<-EOT
     Application containers to run inside the preview service. Exactly one

@@ -23,10 +23,10 @@ _: {
           files = "^terraform/base/[^/]+\\.tf$";
           pass_filenames = false;
         };
-        terraform-docs-env-pr = {
+        terraform-docs-env-preview = {
           enable = true;
-          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/pr";
-          files = "^terraform/env/pr/[^/]+\\.tf$";
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/env/preview";
+          files = "^terraform/env/preview/[^/]+\\.tf$";
           pass_filenames = false;
         };
         terraform-docs-modules-preview = {
