@@ -74,7 +74,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_github_repository"></a> [github\_repository](#input\_github\_repository) | GitHub repository in OWNER/REPO format (e.g. gawakawa/prenv). Restricts WIF to this repo only. | `string` | n/a | yes |
+| <a name="input_github_repositories"></a> [github\_repositories](#input\_github\_repositories) | GitHub repositories in OWNER/REPO format (e.g. ["my-org/app-a", "my-org/app-b"]) allowed to impersonate the deploy SA via WIF. | `list(string)` | n/a | yes |
 | <a name="input_iap_oauth_client_id"></a> [iap\_oauth\_client\_id](#input\_iap\_oauth\_client\_id) | IAP custom OAuth client ID (created manually in Console). Stored in Secret Manager and bound to IAP via `gcloud iap settings set`. | `string` | n/a | yes |
 | <a name="input_iap_oauth_client_secret"></a> [iap\_oauth\_client\_secret](#input\_iap\_oauth\_client\_secret) | IAP custom OAuth client secret (created manually in Console). | `string` | n/a | yes |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Google Cloud project ID. | `string` | n/a | yes |

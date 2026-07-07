@@ -32,9 +32,19 @@ variable "state_bucket_name" {
   type        = string
 }
 
-variable "github_repository" {
-  description = "GitHub repository in OWNER/REPO format (e.g. gawakawa/prenv). Restricts WIF to this repo only."
-  type        = string
+variable "github_repositories" {
+  description = "GitHub repositories in OWNER/REPO format (e.g. [\"my-org/app-a\", \"my-org/app-b\"]) allowed to impersonate the deploy SA via WIF."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.github_repositories) > 0
+    error_message = "github_repositories must not be empty."
+  }
+
+  validation {
+    condition     = alltrue([for r in var.github_repositories : can(regex("^[^/]+/[^/]+$", r))])
+    error_message = "Each entry must be in OWNER/REPO form."
+  }
 }
 
 variable "iap_members" {
