@@ -14,7 +14,7 @@ A Google Cloud version of the preview environment setup in
 │   ├── modules/preview/       reusable Cloud Run preview module — other repos call this
 │   └── env/preview/           this repo's own calling example
 └── .github/workflows/
-    ├── reusable-deploy-prenv.yml, reusable-destroy-prenv.yml   reusable workflows (workflow_call)
+    ├── reusable-{deploy,destroy,gc}-prenv.yml   reusable workflows (workflow_call)
     └── deploy-prenv.yml, teardown-prenv.yml, gc-prenv.yml      thin triggers that call the above
 ```
 

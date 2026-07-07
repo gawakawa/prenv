@@ -48,7 +48,7 @@ gh label create preview --color BFDADC --description "Deploy a preview environme
 
 Copy `templates/deploy-prenv.yml`, `templates/teardown-prenv.yml`,
 `templates/gc-prenv.yml` verbatim to `.github/workflows/`. They reference
-`gawakawa/prenv/.github/workflows/reusable-{deploy,destroy}-prenv.yml` pinned to
+`gawakawa/prenv/.github/workflows/reusable-{deploy,destroy,gc}-prenv.yml` pinned to
 a prenv commit SHA — bump it when adopting newer prenv changes.
 
 ## Step 5: Write the Terraform stub
