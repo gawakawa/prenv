@@ -1,12 +1,12 @@
 # terraform/modules/preview
 
 Reusable Cloud Run preview environment. Deploys one multi-container service
-(`prenv-pr-<N>`) protected by Identity-Aware Proxy (IAP); only members granted
-IAP access can reach its `.run.app` URL.
+(`<owner>-<repo>-pr-<N>`) protected by Identity-Aware Proxy (IAP); only members
+granted IAP access can reach its `.run.app` URL.
 
 Callers supply their own application containers via `containers`; the module
 always owns naming, `launch_stage`, IAP, and (when `enable_db_sidecar = true`)
-a Postgres sidecar. See `terraform/env/pr` for a calling example.
+a Postgres sidecar. See `terraform/env/preview` for a calling example.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
