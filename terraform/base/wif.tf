@@ -12,7 +12,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   workload_identity_pool_provider_id = "github-actions"
   project                            = var.project_id
   display_name                       = "GitHub Actions OIDC"
-  description                        = "Allows GitHub Actions in ${var.github_repository} to impersonate the deploy SA."
+  description                        = "Allows GitHub Actions in the configured repositories to impersonate the deploy SA."
 
   attribute_mapping = {
     "google.subject"       = "assertion.sub"
@@ -21,8 +21,8 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.ref"        = "assertion.ref"
   }
 
-  # Restrict to this repo only — prevents other repos from using this provider.
-  attribute_condition = "assertion.repository == \"${var.github_repository}\""
+  # Restrict to the configured repositories — prevents other repos from using this provider.
+  attribute_condition = "assertion.repository in [${join(", ", formatlist("%q", var.github_repositories))}]"
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
@@ -36,11 +36,13 @@ resource "google_service_account" "deployer" {
   description  = "Impersonated by GitHub Actions to manage per-PR Cloud Run preview environments."
 }
 
-# Allow the WIF pool (scoped to this repo) to impersonate the deploy SA.
+# Allow the WIF pool (scoped to the configured repositories) to impersonate the deploy SA.
 resource "google_service_account_iam_member" "wif_deployer" {
+  for_each = toset(var.github_repositories)
+
   service_account_id = google_service_account.deployer.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.github_repository}"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${each.value}"
 }
 
 # Deploy SA needs to create/update/delete Cloud Run services, but not set their IAM —
@@ -72,10 +74,14 @@ resource "google_project_iam_member" "deployer_cloudbuild_editor" {
   member  = "serviceAccount:${google_service_account.deployer.email}"
 }
 
-# Deploy SA uploads source to the Cloud Build staging bucket.
+# Deploy SA uploads source to the Cloud Build staging bucket. `gcloud builds
+# submit --service-account=...` needs bucket-level roles/storage.admin here —
+# roles/storage.objectAdmin alone fails with "forbidden from accessing the
+# bucket" (a known gap: Google's own docs don't state a storage role for this
+# path, but this is the role that resolves the error in practice).
 resource "google_storage_bucket_iam_member" "deployer_cloudbuild_staging" {
   bucket = google_storage_bucket.cloudbuild.name
-  role   = "roles/storage.objectAdmin"
+  role   = "roles/storage.admin"
   member = "serviceAccount:${google_service_account.deployer.email}"
 }
 
@@ -119,4 +125,11 @@ resource "google_project_iam_member" "cloudbuild_log_writer" {
   project = var.project_id
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
+
+# Build SA reads the uploaded source archive from the staging bucket.
+resource "google_storage_bucket_iam_member" "cloudbuild_staging_reader" {
+  bucket = google_storage_bucket.cloudbuild.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.cloudbuild.email}"
 }

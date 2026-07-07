@@ -66,6 +66,7 @@ No modules.
 | [google_service_account_iam_member.wif_deployer](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account_iam_member) | resource |
 | [google_storage_bucket.cloudbuild](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket) | resource |
 | [google_storage_bucket.tfstate](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket) | resource |
+| [google_storage_bucket_iam_member.cloudbuild_staging_reader](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_bucket_iam_member.deployer_cloudbuild_staging](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_bucket_iam_member.deployer_tfstate](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_project.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/project) | data source |
@@ -74,7 +75,7 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_github_repository"></a> [github\_repository](#input\_github\_repository) | GitHub repository in OWNER/REPO format (e.g. gawakawa/prenv). Restricts WIF to this repo only. | `string` | n/a | yes |
+| <a name="input_github_repositories"></a> [github\_repositories](#input\_github\_repositories) | GitHub repositories in OWNER/REPO format (e.g. ["my-org/app-a", "my-org/app-b"]) allowed to impersonate the deploy SA via WIF. | `list(string)` | n/a | yes |
 | <a name="input_iap_oauth_client_id"></a> [iap\_oauth\_client\_id](#input\_iap\_oauth\_client\_id) | IAP custom OAuth client ID (created manually in Console). Stored in Secret Manager and bound to IAP via `gcloud iap settings set`. | `string` | n/a | yes |
 | <a name="input_iap_oauth_client_secret"></a> [iap\_oauth\_client\_secret](#input\_iap\_oauth\_client\_secret) | IAP custom OAuth client secret (created manually in Console). | `string` | n/a | yes |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Google Cloud project ID. | `string` | n/a | yes |
@@ -89,9 +90,10 @@ No modules.
 
 | Name | Description |
 | ---- | ----------- |
-| <a name="output_build_service_account_email"></a> [build\_service\_account\_email](#output\_build\_service\_account\_email) | Cloud Build service account email. Set as the `pr` environment variable BUILD\_SA. |
-| <a name="output_deploy_service_account_email"></a> [deploy\_service\_account\_email](#output\_deploy\_service\_account\_email) | Deploy service account email. Set as the `pr` environment variable DEPLOY\_SA. |
+| <a name="output_build_service_account_email"></a> [build\_service\_account\_email](#output\_build\_service\_account\_email) | Cloud Build service account email. Set as the `preview` environment variable BUILD\_SA. |
+| <a name="output_deploy_service_account_email"></a> [deploy\_service\_account\_email](#output\_deploy\_service\_account\_email) | Deploy service account email. Set as the `preview` environment variable DEPLOY\_SA. |
+| <a name="output_project_id"></a> [project\_id](#output\_project\_id) | Google Cloud project ID. Set as the `preview` environment variable GCP\_PROJECT\_ID. |
 | <a name="output_repository_url"></a> [repository\_url](#output\_repository\_url) | Docker registry URL for this Artifact Registry repository. Set as GitHub Actions variable AR\_REPO. |
 | <a name="output_state_bucket_name"></a> [state\_bucket\_name](#output\_state\_bucket\_name) | GCS bucket for Terraform state. Use as backend `bucket` in per-PR module. |
-| <a name="output_wif_provider_name"></a> [wif\_provider\_name](#output\_wif\_provider\_name) | Workload Identity Provider resource name. Set as the `pr` environment variable WIF\_PROVIDER. |
+| <a name="output_wif_provider_name"></a> [wif\_provider\_name](#output\_wif\_provider\_name) | Workload Identity Provider resource name. Set as the `preview` environment variable WIF\_PROVIDER. |
 <!-- END_TF_DOCS -->

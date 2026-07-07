@@ -15,7 +15,7 @@ jobs:
   teardown:
     name: Tear down PR #${{ inputs.pr }}
     runs-on: ubuntu-latest
-    environment: pr
+    environment: preview
     timeout-minutes: 15
     permissions:
       id-token: write
@@ -32,21 +32,28 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SA }}
+      - name: Resolve repo
+        id: repo
+        env:
+          GH_REPO: ${{ github.repository }}
+        run: echo "repo=${GH_REPO,,}" >> "$GITHUB_OUTPUT"
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
         with:
           tofu_wrapper: false
       - name: Terraform init
-        working-directory: terraform/env/pr
+        working-directory: terraform/env/preview
         env:
+          REPO: ${{ steps.repo.outputs.repo }}
           PR_NUMBER: ${{ inputs.pr }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
-          tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
+          tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=${REPO}/pr/${PR_NUMBER}"
       - name: Terraform destroy
-        working-directory: terraform/env/pr
+        working-directory: terraform/env/preview
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ inputs.pr }}
+          TF_VAR_repo: ${{ steps.repo.outputs.repo }}
         run: |
           tofu destroy -auto-approve

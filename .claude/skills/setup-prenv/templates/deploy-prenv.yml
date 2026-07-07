@@ -1,0 +1,27 @@
+name: "Deploy (trigger)"
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event.label.name == 'preview'
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    # Pinned to a prenv commit SHA. Bump when adopting newer prenv changes.
+    uses: gawakawa/prenv/.github/workflows/reusable-deploy-prenv.yml@feea0950ab5771874cf3ede17f57ce2345b86c0a
+    with:
+      pr: ${{ github.event.pull_request.number }}
+      head_sha: ${{ github.event.pull_request.head.sha }}
+      # One entry per image to build. context/dockerfile are relative to the
+      # repo root; cache enables a registry build cache for that image.
+      images: |
+        [
+          {"name": "app", "context": ".", "dockerfile": "Dockerfile", "cache": true}
+        ]

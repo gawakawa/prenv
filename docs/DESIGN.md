@@ -20,20 +20,50 @@ ingress = `frontend`(SPA + `/api/*` → `localhost:8081` プロキシ)、
 IAP Cookie はホストスコープなのでクロスオリジン呼び出し不可 → 同一オリジン必須。
 Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT=8081` を明示。
 
+## DB
+
+DB が必要なアプリは module 組み込みの Postgres sidecar でのみ提供する。
+ephemeral なプレビュー環境ごとに Cloud SQL 等の永続インスタンスを用意するのは
+コストに見合わない。
+
+## ユースケース
+
+prenv は、複数リポジトリが 1 つの管理用 project を共有して使う前提で構成する。
+
+Terraform は `terraform/modules/preview` を module として公開する。
+各 repo の `terraform/env/preview` は
+`source = "git::https://github.com/gawakawa/prenv.git//terraform/modules/preview?ref=<REF>"`
+でこれを呼び出し、自身のコンテナ構成だけを渡す。
+
+GitHub Actions は deploy/destroy のロジックを `workflow_call` の reusable workflow として
+prenv 内に置く。各 repo は `uses:` で参照する薄いトリガー workflow だけを持つ。
+
+onboard 手順は `.claude/skills/setup-prenv` が自動化する。
+tofu output から 6 つの値を取得し、GitHub 環境変数の設定、`preview` label の作成、
+上記 2 つを呼び出す最小構成のファイル一式の配置までを行う。
+
+## 命名規則
+
+tfstate prefix、イメージ名、Cloud Run サービス名は、共通して owner/repo でリソースを
+分離する。N repo が同じ project / bucket / AR を共有しても衝突しない。
+
+- tfstate prefix: `<owner>/<repo>/pr/<N>`
+- イメージ名: `<owner>/<repo>/<container>:<content-hash>`
+- Cloud Run サービス名: `<owner>-<repo>-pr-<N>`
+
 ## アクセス制御
 
 - プレビューは IAP で保護。許可された identity のみアクセス可、公開(allUsers)は無し。
 - base はプロジェクトの所有者(インフラ)が管理し、ephemeral は利用者(開発)が管理する。
-  運用主体が違うため `terraform/base/` と `terraform/env/pr/` に分ける。
+  運用主体が違うため `terraform/base/` と `terraform/env/preview/` に分ける。
 - IAP に必要な IAM は所有者側(base)が付与し、利用者側(ephemeral)には与えない。
 
 ## キャッシュ戦略
 
-共通: イメージ名 `<AR_REPO>/<owner>/<repo>/{backend,db,frontend}:<content-hash>`
-(AR は複数 repo 共有のため owner/repo をパス分離し混在・誤再利用を防ぐ)。
 content-hash タグ = context + Dockerfile の内容ハッシュ。commit から再計算でき追跡可。
 image ごとに独立 build し、content-hash タグで既存確認して不要な build を省く。
-3 image の build は並列実行(CI オーケストレーション側で制御)。
+build する image の一覧は deploy workflow の呼び出し側が指定し、各 image の build は
+GitHub Actions の matrix で並列実行する。
 
 ### アプリ
 

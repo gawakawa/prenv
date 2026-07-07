@@ -1,90 +1,46 @@
-# Terraform Module
+# prenv
 
-## Overview
-
-A Google Cloud version of the preview environment setup in [this blog post](https://www.m3tech.blog/entry/2026/06/16/153849).
+Per-PR preview environments on Google Cloud: deploy on a label, tear down when the PR closes.
+A Google Cloud version of the preview environment setup in
+[this blog post](https://www.m3tech.blog/entry/2026/06/16/153849).
 
 ## Structure
 
 ```
 .
-├── backend/                sample Go app
+├── backend/, frontend/, db/    sample app deployed by this repo's own preview environment
 ├── terraform/
-│   ├── base/               one-time foundation (apply once locally)
-│   └── env/pr/             per-PR environment (managed by CI)
+│   ├── base/                  one-time foundation (applied once, locally, by the project owner)
+│   ├── modules/preview/       reusable Cloud Run preview module — other repos call this
+│   └── env/preview/           this repo's own calling example
 └── .github/workflows/
-    ├── deploy-prenv.yml    deploy on `preview` label
-    ├── teardown-prenv.yml  destroy on PR close or manual trigger
-    └── gc-prenv.yml        daily GC of stale environments
+    ├── reusable-{deploy,destroy,gc}-prenv.yml   reusable workflows (workflow_call)
+    └── deploy-prenv.yml, teardown-prenv.yml, gc-prenv.yml      thin triggers that call the above
 ```
 
-## One-time setup
+## Onboarding another repository
 
-### 1. Bootstrap IAP (manual — Console only)
+Prerequisites, from the project owner:
 
-1. **Configure the OAuth consent screen**: Console → APIs & Services → OAuth consent screen → External. Add your Google account as a Test user.
-2. **Create a custom OAuth client**: Console → APIs & Services → Credentials → OAuth client ID → Web application. Add redirect URI:
-   ```
-   https://iap.googleapis.com/v1/oauth/clientIds/<CLIENT_ID>:handleRedirect
-   ```
-   Note the Client ID and Client secret for `terraform/base/terraform.tfvars`.
-3. **Bootstrap the IAP service agent**: Console → Security → Identity-Aware Proxy. Toggle IAP on for any Cloud Run service once.
-4. Complete steps 1–3 before running `tofu apply`.
+- the six values `GCP_PROJECT_ID`, `WIF_PROVIDER`, `DEPLOY_SA`, `BUILD_SA`, `AR_REPO`, `GCS_BUCKET`
+- your repo added to base's `github_repositories`
 
-### 2. Apply the base foundation
+Run the `setup-prenv` skill (`.claude/skills/setup-prenv`) in your repo. It automates:
 
-```bash
-cd terraform/base
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars — fill in all values (see terraform.tfvars.example)
-tofu init
-tofu apply
-```
+- creating the `preview` GitHub environment and setting the six values above
+- creating the `preview` label
+- writing `deploy-prenv.yml` / `teardown-prenv.yml` / `gc-prenv.yml` trigger workflows that call this repo's reusable workflows
+- writing a `terraform/env/preview` stub that calls `terraform/modules/preview`
 
-### 3. Bind the OAuth client to IAP (manual — once after step 2)
-
-Create `iap_settings.yaml`:
-
-```yaml
-access_settings:
-  oauth_settings:
-    client_id: <CLIENT_ID>
-    client_secret: <CLIENT_SECRET>
-```
-
-```bash
-gcloud iap settings set iap_settings.yaml --project=<project_id>
-```
-
-### 4. Set GitHub Actions variables
-
-GitHub → Settings → Environments → New environment → name it `pr`.
-
-> **Do not add protection rules** — they would block automatic teardown when a PR is closed.
-
-Add these as **Environment variables**:
-
-| Variable | Source |
-|---|---|
-| `WIF_PROVIDER` | `cd terraform/base && tofu output -raw wif_provider_name` |
-| `DEPLOY_SA` | `cd terraform/base && tofu output -raw deploy_service_account_email` |
-| `BUILD_SA` | `cd terraform/base && tofu output -raw build_service_account_email` |
-| `GCP_PROJECT_ID` | your Google Cloud project ID |
-| `GCS_BUCKET` | `cd terraform/base && tofu output -raw state_bucket_name` |
-| `AR_REPO` | `cd terraform/base && tofu output -raw repository_url` |
-
-### 5. Create the `preview` label
-
-GitHub → Issues → Labels → create a label named `preview`.
+See `docs/DESIGN.md` for how the module and reusable workflows are referenced.
 
 ## Usage
 
-### Created
+- Add the `preview` label to a PR → a preview URL is commented on the PR.
+- Close the PR (or run the teardown workflow manually) → the environment is destroyed.
+- Idle 3+ days → swept by the daily GC.
 
-- the `preview` label is added to a PR.
+## More
 
-### Destroyed
-
-- the PR is closed.
-- the teardown workflow is run manually.
-- its state has been idle for 3+ days (swept by the daily GC).
+- `docs/DESIGN.md` — design decisions and rationale.
+- `CONTRIBUTING.md` — dev environment setup and how to submit changes.

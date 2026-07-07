@@ -1,4 +1,4 @@
-name: "Teardown prenv"
+name: "Teardown (trigger)"
 
 on:
   pull_request:
@@ -36,6 +36,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: ./.github/workflows/reusable-destroy-prenv.yml
+    # Pinned to a prenv commit SHA. Bump when adopting newer prenv changes.
+    uses: gawakawa/prenv/.github/workflows/reusable-destroy-prenv.yml@feea0950ab5771874cf3ede17f57ce2345b86c0a
     with:
       pr: ${{ needs.resolve.outputs.pr }}

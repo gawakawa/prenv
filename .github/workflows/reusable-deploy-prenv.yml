@@ -1,0 +1,165 @@
+name: "Deploy prenv"
+
+on:
+  workflow_call:
+    inputs:
+      pr:
+        description: "PR number"
+        required: true
+        type: string
+      head_sha:
+        description: "Head commit SHA to deploy"
+        required: true
+        type: string
+      images:
+        description: >-
+          JSON array of images to build, each { name, context, dockerfile, cache }.
+          Resulting refs are merged and passed to Terraform as TF_VAR_images
+          (a map keyed by name).
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.image.name }}
+    runs-on: ubuntu-latest
+    environment: preview
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJson(inputs.images) }}
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      BUILD_SA: ${{ vars.BUILD_SA }}
+      # Must match the Cloud Build staging bucket's location (terraform/base's
+      # `region`, default asia-northeast1), or gcloud builds submit fails with
+      # a region/location mismatch.
+      REGION: asia-northeast1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.head_sha }}
+          persist-credentials: false
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+
+      - name: Resolve image reference
+        id: ref
+        env:
+          AR_REPO: ${{ vars.AR_REPO }}
+          GH_REPO: ${{ github.repository }}
+          CONTEXT: ${{ matrix.image.context }}
+          DOCKERFILE: ${{ matrix.image.dockerfile }}
+        run: |
+          repo="${GH_REPO,,}"
+          tag=$(git rev-parse "HEAD:${CONTEXT}" "HEAD:${DOCKERFILE}" | sha256sum | cut -c1-16)
+          echo "ref=${AR_REPO}/${repo}/${{ matrix.image.name }}:${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Build image
+        env:
+          REF: ${{ steps.ref.outputs.ref }}
+        run: |
+          .github/scripts/build-image.sh \
+            "${{ matrix.image.context }}" "${{ matrix.image.dockerfile }}" \
+            "$REF" "${{ matrix.image.cache }}"
+
+  deploy:
+    name: Deploy preview environment
+    needs: build
+    runs-on: ubuntu-latest
+    environment: preview
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    concurrency:
+      group: prenv-${{ inputs.pr }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.head_sha }}
+          persist-credentials: false
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+
+      - name: Resolve repo
+        id: repo
+        env:
+          GH_REPO: ${{ github.repository }}
+        run: echo "repo=${GH_REPO,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve image references
+        id: images
+        env:
+          IMAGES_JSON: ${{ inputs.images }}
+          AR_REPO: ${{ vars.AR_REPO }}
+          REPO: ${{ steps.repo.outputs.repo }}
+        run: |
+          images_json="{}"
+          while IFS= read -r item; do
+            name=$(jq -r '.name' <<<"$item")
+            context=$(jq -r '.context' <<<"$item")
+            dockerfile=$(jq -r '.dockerfile' <<<"$item")
+            tag=$(git rev-parse "HEAD:${context}" "HEAD:${dockerfile}" | sha256sum | cut -c1-16)
+            ref="${AR_REPO}/${REPO}/${name}:${tag}"
+            images_json=$(jq -c --arg k "$name" --arg v "$ref" '. + {($k): $v}' <<<"$images_json")
+          done < <(jq -c '.[]' <<<"$IMAGES_JSON")
+          echo "images_json=${images_json}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
+        with:
+          tofu_wrapper: false
+
+      - name: Terraform init
+        working-directory: terraform/env/preview
+        env:
+          REPO: ${{ steps.repo.outputs.repo }}
+          PR_NUMBER: ${{ inputs.pr }}
+          GCS_BUCKET: ${{ vars.GCS_BUCKET }}
+        run: |
+          tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=${REPO}/pr/${PR_NUMBER}"
+
+      - name: Terraform apply
+        working-directory: terraform/env/preview
+        env:
+          TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+          TF_VAR_pr_number: ${{ inputs.pr }}
+          TF_VAR_repo: ${{ steps.repo.outputs.repo }}
+          TF_VAR_images: ${{ steps.images.outputs.images_json }}
+        run: |
+          tofu apply -auto-approve
+
+      - name: Get preview URL
+        id: url
+        working-directory: terraform/env/preview
+        run: echo "url=$(tofu output -raw url)" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL on PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr }}
+          PREVIEW_URL: ${{ steps.url.outputs.url }}
+          HEAD_SHA: ${{ inputs.head_sha }}
+        run: |
+          body=$(printf "## 🚀 Preview environment\n\n**URL:** %s\n\nDeployed from commit \`%s\`\n\n> Close the PR to tear down (stale environments are also GC'd daily).\n" "$PREVIEW_URL" "$HEAD_SHA")
+          gh pr comment "$PR_NUMBER" --edit-last --create-if-none --body "$body"
