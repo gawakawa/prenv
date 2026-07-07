@@ -69,7 +69,7 @@ jobs:
         run: |
           .github/scripts/build-image.sh \
             "${{ matrix.image.context }}" "${{ matrix.image.dockerfile }}" \
-            "$REF" "${{ matrix.image.cache && 'yes' || 'no' }}"
+            "$REF" "${{ matrix.image.cache }}"
 
   deploy:
     name: Deploy preview environment

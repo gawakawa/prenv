@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Submit a single-image Cloud Build job, skipping if the image already exists.
-# Usage: build-image.sh <context> <dockerfile> <ref> <cache: yes|no>
+# Usage: build-image.sh <context> <dockerfile> <ref> <cache: true|false>
 #   context    - Docker build context directory
 #   dockerfile - path to the Dockerfile
 #   ref        - full image reference, e.g. us-docker.pkg.dev/proj/repo/backend:abc123
-#   cache      - 'yes' to push/pull a registry build cache, 'no' otherwise
+#   cache      - 'true' to push/pull a registry build cache, 'false' otherwise
 #
 # Required env: PROJECT_ID, BUILD_SA
 set -euo pipefail
