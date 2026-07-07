@@ -10,10 +10,6 @@ PR ごとに Cloud Run 上へ隔離されたプレビュー環境を作り、PR 
   - Cloud Run + tfstate … PR クローズ / 手動 / 3 日アイドル日次 GC → tofu destroy。
   - AR イメージ … AR サーバサイド cleanup policy(age ベース、既定 7 日)。
 - インバリアント: AR 7 日 > stale sweep 3 日(使用中イメージが先に消えない)。
-- 命名: tfstate prefix (`<owner>/<repo>/pr/<N>`)、イメージ名
-  (`<owner>/<repo>/{backend,db,frontend}:<hash>`)、Cloud Run サービス名
-  (`<owner>-<repo>-pr-<N>`、`/` 不可のため `-` 区切り) は共に owner/repo で分離する。
-  N repo が同じ bucket / AR / project を共有しても衝突しない。
 
 ## トポロジ
 
@@ -33,14 +29,21 @@ Terraform は `terraform/modules/preview` を module として公開する。
 `source = "git::https://github.com/gawakawa/prenv.git//terraform/modules/preview?ref=<REF>"`
 でこれを呼び出し、自身のコンテナ構成だけを渡す。
 
-GitHub Actions は deploy/destroy のロジックを `reusable-*-prenv.yml` として prenv 内に置き、
-`workflow_call` の reusable workflow にする。
-各 repo は `uses: gawakawa/prenv/.github/workflows/reusable-*-prenv.yml@<REF>` で参照する、
-`*-prenv.yml` という薄いトリガー workflow だけを持つ。
+GitHub Actions は deploy/destroy のロジックを `workflow_call` の reusable workflow として
+prenv 内に置く。各 repo は `uses:` で参照する薄いトリガー workflow だけを持つ。
 
 onboard 手順は `.claude/skills/setup-prenv` が自動化する。
 tofu output から 6 つの値を取得し、GitHub 環境変数の設定、`preview` label の作成、
 上記 2 つを呼び出す最小構成のファイル一式の配置までを行う。
+
+## 命名規則
+
+tfstate prefix、イメージ名、Cloud Run サービス名は、共通して owner/repo でリソースを
+分離する。N repo が同じ project / bucket / AR を共有しても衝突しない。
+
+- tfstate prefix: `<owner>/<repo>/pr/<N>`
+- イメージ名: `<owner>/<repo>/<container>:<content-hash>`
+- Cloud Run サービス名: `<owner>-<repo>-pr-<N>`
 
 ## アクセス制御
 
@@ -51,7 +54,6 @@ tofu output から 6 つの値を取得し、GitHub 環境変数の設定、`pre
 
 ## キャッシュ戦略
 
-共通: イメージ名 `<AR_REPO>/<owner>/<repo>/{backend,db,frontend}:<content-hash>`。
 content-hash タグ = context + Dockerfile の内容ハッシュ。commit から再計算でき追跡可。
 image ごとに独立 build し、content-hash タグで既存確認して不要な build を省く。
 3 image の build は並列実行(CI オーケストレーション側で制御)。
