@@ -11,7 +11,7 @@ jobs:
   discover:
     name: Discover stale environments
     runs-on: ubuntu-latest
-    environment: pr
+    environment: preview
     timeout-minutes: 5
     permissions:
       id-token: write
@@ -47,6 +47,6 @@ jobs:
       fail-fast: false
       matrix:
         pr: ${{ fromJson(needs.discover.outputs.prs) }}
-    uses: ./.github/workflows/destroy-prenv.yml
+    uses: ./.github/workflows/reusable-destroy-prenv.yml
     with:
       pr: ${{ matrix.pr }}

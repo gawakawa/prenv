@@ -15,7 +15,7 @@ jobs:
   teardown:
     name: Tear down PR #${{ inputs.pr }}
     runs-on: ubuntu-latest
-    environment: pr
+    environment: preview
     timeout-minutes: 15
     permissions:
       id-token: write
@@ -37,7 +37,7 @@ jobs:
         with:
           tofu_wrapper: false
       - name: Terraform init
-        working-directory: terraform/env/pr
+        working-directory: terraform/env/preview
         env:
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ inputs.pr }}
@@ -46,9 +46,11 @@ jobs:
           repo="${GH_REPO,,}"
           tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=${repo}/pr/${PR_NUMBER}"
       - name: Terraform destroy
-        working-directory: terraform/env/pr
+        working-directory: terraform/env/preview
         env:
+          GH_REPO: ${{ github.repository }}
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ inputs.pr }}
         run: |
+          export TF_VAR_repo="${GH_REPO,,}"
           tofu destroy -auto-approve
