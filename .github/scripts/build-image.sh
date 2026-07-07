@@ -1,18 +1,23 @@
 #!/usr/bin/env bash
 # Submit a single-image Cloud Build job, skipping if the image already exists.
-# Usage: build-image.sh <image> <ref>
-#   image  - backend | db | frontend
-#   ref    - full image reference, e.g. us-docker.pkg.dev/proj/repo/backend:abc123
+# Usage: build-image.sh <name> <context> <dockerfile> <ref> <cache: yes|no>
+#   name       - logical image name, used only for log messages
+#   context    - Docker build context directory
+#   dockerfile - path to the Dockerfile
+#   ref        - full image reference, e.g. us-docker.pkg.dev/proj/repo/backend:abc123
+#   cache      - 'yes' to push/pull a registry build cache, 'no' otherwise
 #
 # Required env: PROJECT_ID, BUILD_SA
 set -euo pipefail
 
-IMAGE=$1
-REF=$2
-CACHE=$( [ "$IMAGE" = db ] && echo no || echo yes )
+NAME=$1
+CONTEXT=$2
+DOCKERFILE=$3
+REF=$4
+CACHE=$5
 
 if gcloud artifacts docker images describe "$REF" --quiet >/dev/null 2>&1; then
-  echo "skip $IMAGE ($REF already exists)"
+  echo "skip $NAME ($REF already exists)"
   exit 0
 fi
 
@@ -20,4 +25,4 @@ gcloud builds submit . \
   --project="${PROJECT_ID}" \
   --config=cloudbuild.yaml \
   --service-account="projects/${PROJECT_ID}/serviceAccounts/${BUILD_SA}" \
-  --substitutions="_IMAGE=${IMAGE},_REF=${REF},_CACHE=${CACHE}"
+  --substitutions="_CONTEXT=${CONTEXT},_DOCKERFILE=${DOCKERFILE},_REF=${REF},_CACHE=${CACHE}"

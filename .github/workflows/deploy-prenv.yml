@@ -18,3 +18,9 @@ jobs:
     with:
       pr: ${{ github.event.pull_request.number }}
       head_sha: ${{ github.event.pull_request.head.sha }}
+      images: |
+        [
+          {"name": "backend", "context": "backend", "dockerfile": "docker/backend/Dockerfile", "cache": true},
+          {"name": "db", "context": "db", "dockerfile": "docker/db/Dockerfile", "cache": false},
+          {"name": "frontend", "context": "frontend", "dockerfile": "docker/frontend/Dockerfile", "cache": true}
+        ]

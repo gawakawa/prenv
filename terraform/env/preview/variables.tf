@@ -19,20 +19,8 @@ variable "repo" {
   type        = string
 }
 
-variable "image" {
-  description = "Container image to deploy. Defaults to a public placeholder; replace with your app image."
-  type        = string
-  default     = "us-docker.pkg.dev/cloudrun/container/hello"
-}
-
-variable "db_image" {
-  description = "Postgres sidecar image with migration and seed SQL baked in via initdb. Defaults to vanilla postgres:18-alpine (for teardown); replace with the built db image for deploy."
-  type        = string
-  default     = "postgres:18-alpine"
-}
-
-variable "frontend_image" {
-  description = "Frontend container image to deploy. Defaults to a public placeholder (for teardown); replace with the built frontend image for deploy."
-  type        = string
-  default     = "us-docker.pkg.dev/cloudrun/container/hello"
+variable "images" {
+  description = "Map of image name (backend, db, frontend) to fully-qualified image reference, built and passed in by CI. Empty on teardown, where no build happens and placeholder defaults apply."
+  type        = map(string)
+  default     = {}
 }

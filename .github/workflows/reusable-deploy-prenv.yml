@@ -11,23 +11,29 @@ on:
         description: "Head commit SHA to deploy"
         required: true
         type: string
+      images:
+        description: >-
+          JSON array of images to build, each { name, context, dockerfile, cache }.
+          Resulting refs are merged and passed to Terraform as TF_VAR_images
+          (a map keyed by name).
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
-    name: Deploy preview environment
+  build:
+    name: Build ${{ matrix.image.name }}
     runs-on: ubuntu-latest
-    environment: preview
     timeout-minutes: 15
     permissions:
       contents: read
       id-token: write
-      pull-requests: write
-    concurrency:
-      group: prenv-${{ inputs.pr }}
-      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJson(inputs.images) }}
     env:
       PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       BUILD_SA: ${{ vars.BUILD_SA }}
@@ -39,62 +45,97 @@ jobs:
           persist-credentials: false
 
       - name: Authenticate to Google Cloud
-        id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SA }}
 
       - name: Resolve image reference
-        id: image
+        id: ref
         env:
           AR_REPO: ${{ vars.AR_REPO }}
           GH_REPO: ${{ github.repository }}
+          CONTEXT: ${{ matrix.image.context }}
+          DOCKERFILE: ${{ matrix.image.dockerfile }}
         run: |
           repo="${GH_REPO,,}"
-          backend_tag=$(git rev-parse  "HEAD:backend"  "HEAD:docker/backend/Dockerfile"  | sha256sum | cut -c1-16)
-          db_tag=$(git rev-parse       "HEAD:db"       "HEAD:docker/db/Dockerfile"       | sha256sum | cut -c1-16)
-          frontend_tag=$(git rev-parse "HEAD:frontend" "HEAD:docker/frontend/Dockerfile" | sha256sum | cut -c1-16)
-          {
-            echo "repo=${repo}"
-            echo "ref=${AR_REPO}/${repo}/backend:${backend_tag}"
-            echo "db_ref=${AR_REPO}/${repo}/db:${db_tag}"
-            echo "frontend_ref=${AR_REPO}/${repo}/frontend:${frontend_tag}"
-          } >> "$GITHUB_OUTPUT"
+          tag=$(git rev-parse "HEAD:${CONTEXT}" "HEAD:${DOCKERFILE}" | sha256sum | cut -c1-16)
+          echo "ref=${AR_REPO}/${repo}/${{ matrix.image.name }}:${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Build image
+        env:
+          REF: ${{ steps.ref.outputs.ref }}
+        run: |
+          .github/scripts/build-image.sh \
+            "${{ matrix.image.name }}" "${{ matrix.image.context }}" "${{ matrix.image.dockerfile }}" \
+            "$REF" "${{ matrix.image.cache && 'yes' || 'no' }}"
+
+      - name: Write image ref
+        env:
+          NAME: ${{ matrix.image.name }}
+          REF: ${{ steps.ref.outputs.ref }}
+        run: |
+          jq -n --arg name "$NAME" --arg ref "$REF" '{($name): $ref}' > image-ref.json
+
+      - name: Upload image ref
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: image-ref-${{ matrix.image.name }}
+          path: image-ref.json
+          retention-days: 1
+
+  deploy:
+    name: Deploy preview environment
+    needs: build
+    runs-on: ubuntu-latest
+    environment: preview
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    concurrency:
+      group: prenv-${{ inputs.pr }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.head_sha }}
+          persist-credentials: false
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SA }}
+
+      - name: Resolve repo
+        id: repo
+        env:
+          GH_REPO: ${{ github.repository }}
+        run: echo "repo=${GH_REPO,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Download image refs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: image-ref-*
+          path: image-refs
+          merge-multiple: true
+
+      - name: Merge image refs
+        id: images
+        run: echo "images_json=$(jq -sc 'add' image-refs/*.json)" >> "$GITHUB_OUTPUT"
 
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
         with:
           tofu_wrapper: false
 
-      - name: Build backend image
-        id: build-backend
-        background: true
-        env:
-          REF: ${{ steps.image.outputs.ref }}
-        run: .github/scripts/build-image.sh backend "$REF"
-
-      - name: Build db image
-        id: build-db
-        background: true
-        env:
-          REF: ${{ steps.image.outputs.db_ref }}
-        run: .github/scripts/build-image.sh db "$REF"
-
-      - name: Build frontend image
-        id: build-frontend
-        background: true
-        env:
-          REF: ${{ steps.image.outputs.frontend_ref }}
-        run: .github/scripts/build-image.sh frontend "$REF"
-
-      - name: Wait for image builds
-        wait: [build-backend, build-db, build-frontend]
-
       - name: Terraform init
         working-directory: terraform/env/preview
         env:
-          REPO: ${{ steps.image.outputs.repo }}
+          REPO: ${{ steps.repo.outputs.repo }}
           PR_NUMBER: ${{ inputs.pr }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
@@ -105,10 +146,8 @@ jobs:
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ inputs.pr }}
-          TF_VAR_repo: ${{ steps.image.outputs.repo }}
-          TF_VAR_image: ${{ steps.image.outputs.ref }}
-          TF_VAR_db_image: ${{ steps.image.outputs.db_ref }}
-          TF_VAR_frontend_image: ${{ steps.image.outputs.frontend_ref }}
+          TF_VAR_repo: ${{ steps.repo.outputs.repo }}
+          TF_VAR_images: ${{ steps.images.outputs.images_json }}
         run: |
           tofu apply -auto-approve
 

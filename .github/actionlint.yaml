@@ -1,8 +1,1 @@
 config-variables: null
-
-paths:
-  .github/workflows/reusable-deploy-prenv.yml:
-    ignore:
-      - 'unexpected key "background"'
-      - 'unexpected key "wait"'
-      - 'step must run script with "run" section or run action with "uses" section'
