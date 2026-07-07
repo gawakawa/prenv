@@ -19,8 +19,8 @@ variable "repo" {
   type        = string
 }
 
-variable "image" {
-  description = "Container image to deploy. Defaults to a public placeholder; replace with your app image."
-  type        = string
-  default     = "us-docker.pkg.dev/cloudrun/container/hello"
+variable "images" {
+  description = "Map of image name to fully-qualified image reference, built and passed in by CI. Empty on teardown, where no build happens and the placeholder default applies."
+  type        = map(string)
+  default     = {}
 }

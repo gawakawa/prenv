@@ -19,3 +19,9 @@ jobs:
     with:
       pr: ${{ github.event.pull_request.number }}
       head_sha: ${{ github.event.pull_request.head.sha }}
+      # One entry per image to build. context/dockerfile are relative to the
+      # repo root; cache enables a registry build cache for that image.
+      images: |
+        [
+          {"name": "app", "context": ".", "dockerfile": "Dockerfile", "cache": true}
+        ]

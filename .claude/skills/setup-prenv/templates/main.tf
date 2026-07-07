@@ -17,7 +17,7 @@ module "preview" {
   containers = [
     {
       name  = "app"
-      image = var.image
+      image = lookup(var.images, "app", "us-docker.pkg.dev/cloudrun/container/hello")
       port  = 8080
     },
   ]

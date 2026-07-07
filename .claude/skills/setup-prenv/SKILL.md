@@ -47,9 +47,14 @@ gh label create preview --color BFDADC --description "Deploy a preview environme
 ## Step 4: Write the trigger workflows
 
 Copy `templates/deploy-prenv.yml`, `templates/teardown-prenv.yml`,
-`templates/gc-prenv.yml` verbatim to `.github/workflows/`. They reference
+`templates/gc-prenv.yml` to `.github/workflows/`. They reference
 `gawakawa/prenv/.github/workflows/reusable-{deploy,destroy,gc}-prenv.yml` pinned to
 a prenv commit SHA — bump it when adopting newer prenv changes.
+
+`teardown-prenv.yml` and `gc-prenv.yml` are copied verbatim. `deploy-prenv.yml`'s
+`images` input lists what to build — edit it to match this repo's image(s): one
+entry per image, each with `name`, `context` (build context directory), `dockerfile`
+(path to the Dockerfile), and `cache` (enable a registry build cache for that image).
 
 ## Step 5: Write the Terraform stub
 
