@@ -10,6 +10,9 @@ PR ごとに Cloud Run 上へ隔離されたプレビュー環境を作り、PR 
   - Cloud Run + tfstate … PR クローズ / 手動 / 3 日アイドル日次 GC → tofu destroy。
   - AR イメージ … AR サーバサイド cleanup policy(age ベース、既定 7 日)。
 - インバリアント: AR 7 日 > stale sweep 3 日(使用中イメージが先に消えない)。
+- 命名: tfstate prefix (`<owner>/<repo>/pr/<N>`) とイメージ名
+  (`<owner>/<repo>/{backend,db,frontend}:<hash>`) は共に owner/repo で分離する。
+  N repo が同じ bucket / AR を共有しても衝突しない。
 
 ## トポロジ
 
@@ -47,8 +50,7 @@ tofu output から 6 つの値を取得し、GitHub 環境変数の設定、`pre
 
 ## キャッシュ戦略
 
-共通: イメージ名 `<AR_REPO>/<owner>/<repo>/{backend,db,frontend}:<content-hash>`
-(AR は複数 repo 共有のため owner/repo をパス分離し混在・誤再利用を防ぐ)。
+共通: イメージ名 `<AR_REPO>/<owner>/<repo>/{backend,db,frontend}:<content-hash>`。
 content-hash タグ = context + Dockerfile の内容ハッシュ。commit から再計算でき追跡可。
 image ごとに独立 build し、content-hash タグで既存確認して不要な build を省く。
 3 image の build は並列実行(CI オーケストレーション側で制御)。

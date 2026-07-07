@@ -27,10 +27,12 @@ jobs:
         id: prs
         env:
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          prs=$(gcloud storage objects list "gs://${GCS_BUCKET}/pr/*/default.tfstate" \
+          repo="${GH_REPO,,}"
+          prs=$(gcloud storage objects list "gs://${GCS_BUCKET}/${repo}/pr/*/default.tfstate" \
             --filter="updated < -P3D" \
-            --format="value(name.segment(1))" \
+            --format="value(name.segment(3))" \
             | jq -Rcn '[inputs]')
           echo "prs=${prs}" >> "$GITHUB_OUTPUT"
 

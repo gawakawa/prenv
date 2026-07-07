@@ -56,6 +56,7 @@ jobs:
           db_tag=$(git rev-parse       "HEAD:db"       "HEAD:docker/db/Dockerfile"       | sha256sum | cut -c1-16)
           frontend_tag=$(git rev-parse "HEAD:frontend" "HEAD:docker/frontend/Dockerfile" | sha256sum | cut -c1-16)
           {
+            echo "repo=${repo}"
             echo "ref=${AR_REPO}/${repo}/backend:${backend_tag}"
             echo "db_ref=${AR_REPO}/${repo}/db:${db_tag}"
             echo "frontend_ref=${AR_REPO}/${repo}/frontend:${frontend_tag}"
@@ -93,10 +94,11 @@ jobs:
       - name: Terraform init
         working-directory: terraform/env/pr
         env:
+          REPO: ${{ steps.image.outputs.repo }}
           PR_NUMBER: ${{ inputs.pr }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
-          tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
+          tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=${REPO}/pr/${PR_NUMBER}"
 
       - name: Terraform apply
         working-directory: terraform/env/pr

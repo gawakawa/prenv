@@ -8,11 +8,13 @@ Not applied manually.
 
 ## State isolation
 
-Each PR gets its own Terraform state prefix: `pr/<N>` in the shared GCS bucket.
-The prefix is passed at init time — not hardcoded here — so PRs never share state:
+Each PR gets its own Terraform state prefix: `<owner>/<repo>/pr/<N>` in the shared GCS
+bucket. The `<owner>/<repo>` segment keeps PRs from colliding when multiple repositories
+share the same managed project (see `docs/DESIGN.md`). The prefix is passed at init
+time — not hardcoded here:
 
 ```bash
-tofu init -backend-config="bucket=my-project-tfstate" -backend-config="prefix=pr/123"
+tofu init -backend-config="bucket=my-project-tfstate" -backend-config="prefix=my-org/my-repo/pr/123"
 tofu apply -var="project_id=my-project" -var="pr_number=123"
 ```
 

@@ -39,10 +39,12 @@ jobs:
       - name: Terraform init
         working-directory: terraform/env/pr
         env:
+          GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ inputs.pr }}
           GCS_BUCKET: ${{ vars.GCS_BUCKET }}
         run: |
-          tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=pr/${PR_NUMBER}"
+          repo="${GH_REPO,,}"
+          tofu init -backend-config="bucket=${GCS_BUCKET}" -backend-config="prefix=${repo}/pr/${PR_NUMBER}"
       - name: Terraform destroy
         working-directory: terraform/env/pr
         env:
