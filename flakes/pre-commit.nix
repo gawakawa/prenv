@@ -29,6 +29,12 @@ _: {
           files = "^terraform/env/pr/[^/]+\\.tf$";
           pass_filenames = false;
         };
+        terraform-docs-modules-preview = {
+          enable = true;
+          entry = "${pkgs.terraform-docs}/bin/terraform-docs terraform/modules/preview";
+          files = "^terraform/modules/preview/[^/]+\\.tf$";
+          pass_filenames = false;
+        };
         oxlint = {
           enable = true;
           name = "oxlint";
