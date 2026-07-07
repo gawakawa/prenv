@@ -36,7 +36,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    # Pin to a SHA or tag before relying on this in production.
-    uses: gawakawa/prenv/.github/workflows/destroy-prenv.yml@main
+    # Pinned to a prenv commit SHA. Bump when adopting newer prenv changes.
+    uses: gawakawa/prenv/.github/workflows/reusable-destroy-prenv.yml@8dce312c1efd86c42adbc638d3580c9261ec3aa9
     with:
       pr: ${{ needs.resolve.outputs.pr }}

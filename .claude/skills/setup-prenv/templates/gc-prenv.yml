@@ -11,7 +11,7 @@ jobs:
   discover:
     name: Discover stale environments
     runs-on: ubuntu-latest
-    environment: pr
+    environment: preview
     timeout-minutes: 5
     permissions:
       id-token: write
@@ -47,7 +47,7 @@ jobs:
       fail-fast: false
       matrix:
         pr: ${{ fromJson(needs.discover.outputs.prs) }}
-    # Pin to a SHA or tag before relying on this in production.
-    uses: gawakawa/prenv/.github/workflows/destroy-prenv.yml@main
+    # Pinned to a prenv commit SHA. Bump when adopting newer prenv changes.
+    uses: gawakawa/prenv/.github/workflows/reusable-destroy-prenv.yml@8dce312c1efd86c42adbc638d3580c9261ec3aa9
     with:
       pr: ${{ matrix.pr }}

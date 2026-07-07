@@ -1,6 +1,6 @@
 ---
 name: setup-prenv
-description: "Onboard the current repository to an existing prenv-managed Google Cloud project: create the pr GitHub environment with six vars, create the preview label, and write trigger workflows plus a Terraform stub that calls prenv's reusable module. Use when the user wants to set up preview environments for a repo or asks to onboard a repo to prenv."
+description: "Onboard the current repository to an existing prenv-managed Google Cloud project: create the preview GitHub environment with six vars, create the preview label, and write trigger workflows plus a Terraform stub that calls prenv's reusable module. Use when the user wants to set up preview environments for a repo or asks to onboard a repo to prenv."
 ---
 
 # setup-prenv
@@ -24,16 +24,16 @@ jq -r '.project_id.value, .wif_provider_name.value, .deploy_service_account_emai
 Map the six outputs to `GCP_PROJECT_ID`, `WIF_PROVIDER`, `DEPLOY_SA`, `BUILD_SA`,
 `AR_REPO`, `GCS_BUCKET` in that order.
 
-## Step 2: Create the `pr` GitHub environment and set the six vars
+## Step 2: Create the `preview` GitHub environment and set the six vars
 
 ```bash
-gh api -X PUT "repos/<OWNER>/<REPO>/environments/pr"
-gh variable set GCP_PROJECT_ID --env pr --body "<value>"
-gh variable set WIF_PROVIDER   --env pr --body "<value>"
-gh variable set DEPLOY_SA      --env pr --body "<value>"
-gh variable set BUILD_SA       --env pr --body "<value>"
-gh variable set AR_REPO        --env pr --body "<value>"
-gh variable set GCS_BUCKET     --env pr --body "<value>"
+gh api -X PUT "repos/<OWNER>/<REPO>/environments/preview"
+gh variable set GCP_PROJECT_ID --env preview --body "<value>"
+gh variable set WIF_PROVIDER   --env preview --body "<value>"
+gh variable set DEPLOY_SA      --env preview --body "<value>"
+gh variable set BUILD_SA       --env preview --body "<value>"
+gh variable set AR_REPO        --env preview --body "<value>"
+gh variable set GCS_BUCKET     --env preview --body "<value>"
 ```
 
 Do not add environment protection rules — they block automatic teardown on PR close.
@@ -46,15 +46,15 @@ gh label create preview --color BFDADC --description "Deploy a preview environme
 
 ## Step 4: Write the trigger workflows
 
-Copy `templates/deploy.yml`, `templates/teardown.yml`, `templates/gc.yml` verbatim
-to `.github/workflows/`. They reference
-`gawakawa/prenv/.github/workflows/*-prenv.yml@main` — pin to a commit SHA or tag
-once the rollout is stable.
+Copy `templates/deploy-prenv.yml`, `templates/teardown-prenv.yml`,
+`templates/gc-prenv.yml` verbatim to `.github/workflows/`. They reference
+`gawakawa/prenv/.github/workflows/reusable-{deploy,destroy}-prenv.yml` pinned to
+a prenv commit SHA — bump it when adopting newer prenv changes.
 
 ## Step 5: Write the Terraform stub
 
 Copy `templates/main.tf`, `templates/variables.tf`, `templates/versions.tf`,
-`templates/outputs.tf`, `templates/provider.tf` to `terraform/env/pr/`. Edit
+`templates/outputs.tf`, `templates/provider.tf` to `terraform/env/preview/`. Edit
 `main.tf`'s `containers` list to describe this repo's application — see
 `terraform/modules/preview/README.md` in prenv for the schema and validation
 rules (exactly one container needs `port`; every `depends_on` target needs a

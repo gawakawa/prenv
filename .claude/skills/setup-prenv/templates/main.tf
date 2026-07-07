@@ -1,9 +1,11 @@
 module "preview" {
-  source = "git::https://github.com/gawakawa/prenv.git//terraform/modules/preview?ref=main"
+  # Pinned to a prenv commit SHA. Bump when adopting newer prenv changes.
+  source = "git::https://github.com/gawakawa/prenv.git//terraform/modules/preview?ref=8dce312c1efd86c42adbc638d3580c9261ec3aa9"
 
   project_id = var.project_id
   region     = var.region
   pr_number  = var.pr_number
+  repo       = var.repo
 
   # Exactly one container must set `port` (Cloud Run ingress). Every
   # `depends_on` target must define `startup_probe`, or Cloud Run rejects the

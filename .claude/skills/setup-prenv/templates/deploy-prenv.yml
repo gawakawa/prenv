@@ -14,8 +14,8 @@ jobs:
       contents: read
       id-token: write
       pull-requests: write
-    # Pin to a SHA or tag before relying on this in production.
-    uses: gawakawa/prenv/.github/workflows/deploy-prenv.yml@main
+    # Pinned to a prenv commit SHA. Bump when adopting newer prenv changes.
+    uses: gawakawa/prenv/.github/workflows/reusable-deploy-prenv.yml@8dce312c1efd86c42adbc638d3580c9261ec3aa9
     with:
       pr: ${{ github.event.pull_request.number }}
       head_sha: ${{ github.event.pull_request.head.sha }}
