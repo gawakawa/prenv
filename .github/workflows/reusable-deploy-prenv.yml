@@ -71,20 +71,6 @@ jobs:
             "${{ matrix.image.name }}" "${{ matrix.image.context }}" "${{ matrix.image.dockerfile }}" \
             "$REF" "${{ matrix.image.cache && 'yes' || 'no' }}"
 
-      - name: Write image ref
-        env:
-          NAME: ${{ matrix.image.name }}
-          REF: ${{ steps.ref.outputs.ref }}
-        run: |
-          jq -n --arg name "$NAME" --arg ref "$REF" '{($name): $ref}' > image-ref.json
-
-      - name: Upload image ref
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: image-ref-${{ matrix.image.name }}
-          path: image-ref.json
-          retention-days: 1
-
   deploy:
     name: Deploy preview environment
     needs: build
@@ -117,16 +103,23 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: echo "repo=${GH_REPO,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Download image refs
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          pattern: image-ref-*
-          path: image-refs
-          merge-multiple: true
-
-      - name: Merge image refs
+      - name: Resolve image references
         id: images
-        run: echo "images_json=$(jq -sc 'add' image-refs/*.json)" >> "$GITHUB_OUTPUT"
+        env:
+          IMAGES_JSON: ${{ inputs.images }}
+          AR_REPO: ${{ vars.AR_REPO }}
+          REPO: ${{ steps.repo.outputs.repo }}
+        run: |
+          images_json="{}"
+          while IFS= read -r item; do
+            name=$(jq -r '.name' <<<"$item")
+            context=$(jq -r '.context' <<<"$item")
+            dockerfile=$(jq -r '.dockerfile' <<<"$item")
+            tag=$(git rev-parse "HEAD:${context}" "HEAD:${dockerfile}" | sha256sum | cut -c1-16)
+            ref="${AR_REPO}/${REPO}/${name}:${tag}"
+            images_json=$(jq -c --arg k "$name" --arg v "$ref" '. + {($k): $v}' <<<"$images_json")
+          done < <(jq -c '.[]' <<<"$IMAGES_JSON")
+          echo "images_json=${images_json}" >> "$GITHUB_OUTPUT"
 
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
