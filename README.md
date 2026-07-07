@@ -12,10 +12,10 @@ A Google Cloud version of the preview environment setup in
 ├── terraform/
 │   ├── base/                  one-time foundation (applied once, locally, by the project owner)
 │   ├── modules/preview/       reusable Cloud Run preview module — other repos call this
-│   └── env/pr/                this repo's own calling example
+│   └── env/preview/           this repo's own calling example
 └── .github/workflows/
-    ├── deploy-prenv.yml, destroy-prenv.yml   reusable workflows (workflow_call)
-    └── deploy.yml, teardown.yml, gc.yml      thin triggers that call the above
+    ├── reusable-deploy-prenv.yml, reusable-destroy-prenv.yml   reusable workflows (workflow_call)
+    └── deploy-prenv.yml, teardown-prenv.yml, gc-prenv.yml      thin triggers that call the above
 ```
 
 ## Onboarding another repository
@@ -27,10 +27,10 @@ Prerequisites, from the project owner:
 
 Run the `setup-prenv` skill (`.claude/skills/setup-prenv`) in your repo. It automates:
 
-- creating the `pr` GitHub environment and setting the six values above
+- creating the `preview` GitHub environment and setting the six values above
 - creating the `preview` label
-- writing `deploy.yml` / `teardown.yml` / `gc.yml` trigger workflows that call this repo's reusable workflows
-- writing a `terraform/env/pr` stub that calls `terraform/modules/preview`
+- writing `deploy-prenv.yml` / `teardown-prenv.yml` / `gc-prenv.yml` trigger workflows that call this repo's reusable workflows
+- writing a `terraform/env/preview` stub that calls `terraform/modules/preview`
 
 See `docs/DESIGN.md` for how the module and reusable workflows are referenced.
 

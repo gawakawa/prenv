@@ -10,9 +10,10 @@ PR ごとに Cloud Run 上へ隔離されたプレビュー環境を作り、PR 
   - Cloud Run + tfstate … PR クローズ / 手動 / 3 日アイドル日次 GC → tofu destroy。
   - AR イメージ … AR サーバサイド cleanup policy(age ベース、既定 7 日)。
 - インバリアント: AR 7 日 > stale sweep 3 日(使用中イメージが先に消えない)。
-- 命名: tfstate prefix (`<owner>/<repo>/pr/<N>`) とイメージ名
-  (`<owner>/<repo>/{backend,db,frontend}:<hash>`) は共に owner/repo で分離する。
-  N repo が同じ bucket / AR を共有しても衝突しない。
+- 命名: tfstate prefix (`<owner>/<repo>/pr/<N>`)、イメージ名
+  (`<owner>/<repo>/{backend,db,frontend}:<hash>`)、Cloud Run サービス名
+  (`<owner>-<repo>-pr-<N>`、`/` 不可のため `-` 区切り) は共に owner/repo で分離する。
+  N repo が同じ bucket / AR / project を共有しても衝突しない。
 
 ## トポロジ
 
@@ -28,14 +29,14 @@ Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT
 prenv は、複数リポジトリが 1 つの管理用 project を共有して使う前提で構成する。
 
 Terraform は `terraform/modules/preview` を module として公開する。
-各 repo の `terraform/env/pr` は
+各 repo の `terraform/env/preview` は
 `source = "git::https://github.com/gawakawa/prenv.git//terraform/modules/preview?ref=<REF>"`
 でこれを呼び出し、自身のコンテナ構成だけを渡す。
 
-GitHub Actions は deploy/destroy のロジックを `*-prenv.yml` として prenv 内に置き、
+GitHub Actions は deploy/destroy のロジックを `reusable-*-prenv.yml` として prenv 内に置き、
 `workflow_call` の reusable workflow にする。
-各 repo は `uses: gawakawa/prenv/.github/workflows/*-prenv.yml@<REF>` で参照する、
-薄いトリガー workflow だけを持つ。
+各 repo は `uses: gawakawa/prenv/.github/workflows/reusable-*-prenv.yml@<REF>` で参照する、
+`*-prenv.yml` という薄いトリガー workflow だけを持つ。
 
 onboard 手順は `.claude/skills/setup-prenv` が自動化する。
 tofu output から 6 つの値を取得し、GitHub 環境変数の設定、`preview` label の作成、
@@ -45,7 +46,7 @@ tofu output から 6 つの値を取得し、GitHub 環境変数の設定、`pre
 
 - プレビューは IAP で保護。許可された identity のみアクセス可、公開(allUsers)は無し。
 - base はプロジェクトの所有者(インフラ)が管理し、ephemeral は利用者(開発)が管理する。
-  運用主体が違うため `terraform/base/` と `terraform/env/pr/` に分ける。
+  運用主体が違うため `terraform/base/` と `terraform/env/preview/` に分ける。
 - IAP に必要な IAM は所有者側(base)が付与し、利用者側(ephemeral)には与えない。
 
 ## キャッシュ戦略
