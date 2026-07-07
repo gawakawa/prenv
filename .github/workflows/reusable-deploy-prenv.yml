@@ -38,6 +38,10 @@ jobs:
     env:
       PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       BUILD_SA: ${{ vars.BUILD_SA }}
+      # Must match the Cloud Build staging bucket's location (terraform/base's
+      # `region`, default asia-northeast1), or gcloud builds submit fails with
+      # a region/location mismatch.
+      REGION: asia-northeast1
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
