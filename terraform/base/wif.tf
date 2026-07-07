@@ -126,3 +126,10 @@ resource "google_project_iam_member" "cloudbuild_log_writer" {
   role    = "roles/logging.logWriter"
   member  = "serviceAccount:${google_service_account.cloudbuild.email}"
 }
+
+# Build SA reads the uploaded source archive from the staging bucket.
+resource "google_storage_bucket_iam_member" "cloudbuild_staging_reader" {
+  bucket = google_storage_bucket.cloudbuild.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.cloudbuild.email}"
+}
