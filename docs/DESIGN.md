@@ -62,7 +62,8 @@ tfstate prefix、イメージ名、Cloud Run サービス名は、共通して o
 
 content-hash タグ = context + Dockerfile の内容ハッシュ。commit から再計算でき追跡可。
 image ごとに独立 build し、content-hash タグで既存確認して不要な build を省く。
-3 image の build は並列実行(CI オーケストレーション側で制御)。
+build する image の一覧は deploy workflow の呼び出し側が指定し、各 image の build は
+GitHub Actions の matrix で並列実行する。
 
 ### アプリ
 
