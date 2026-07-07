@@ -1,3 +1,7 @@
+locals {
+  backend_port = 8081
+}
+
 module "preview" {
   source = "../../modules/preview"
 
@@ -13,7 +17,7 @@ module "preview" {
       image = var.frontend_image
       port  = 8080
       env = [
-        { name = "BACKEND_PORT", value = "8081" },
+        { name = "BACKEND_PORT", value = tostring(local.backend_port) },
       ]
       depends_on = ["backend"]
     },
@@ -21,11 +25,11 @@ module "preview" {
       name  = "backend"
       image = var.image
       env = [
-        { name = "PORT", value = "8081" },
+        { name = "PORT", value = tostring(local.backend_port) },
         { name = "DATABASE_URL", value = "postgres://postgres@localhost:5432/app?sslmode=disable" },
       ]
       depends_on    = ["postgres"]
-      startup_probe = { tcp_port = 8081 }
+      startup_probe = { tcp_port = local.backend_port }
     },
   ]
 }
