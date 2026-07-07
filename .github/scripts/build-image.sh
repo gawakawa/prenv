@@ -19,12 +19,14 @@ if gcloud artifacts docker images describe "$REF" --quiet >/dev/null 2>&1; then
   exit 0
 fi
 
-# --region must match the Cloud Build staging bucket's location, or the
-# request fails with "forbidden from accessing the bucket" (a region/location
-# mismatch surfaces as a storage-side 400, not a clear region error).
+# --gcs-source-staging-dir must be explicit: gcloud's auto-detected staging
+# path fails with "forbidden from accessing the bucket" when the caller is a
+# service account (confirmed by reproducing locally with and without this
+# flag, identical caller/bucket/IAM otherwise).
 gcloud builds submit . \
   --project="${PROJECT_ID}" \
   --region="${REGION}" \
+  --gcs-source-staging-dir="gs://${PROJECT_ID}_cloudbuild/source" \
   --config=cloudbuild.yaml \
   --service-account="projects/${PROJECT_ID}/serviceAccounts/${BUILD_SA}" \
   --substitutions="_CONTEXT=${CONTEXT},_DOCKERFILE=${DOCKERFILE},_REF=${REF},_CACHE=${CACHE}"
