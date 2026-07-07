@@ -84,7 +84,7 @@ resource "google_cloud_run_v2_service" "preview" {
         }
 
         dynamic "volume_mounts" {
-          for_each = containers.value.name == "postgres" ? [1] : []
+          for_each = containers.value.name == local.postgres_container.name ? [1] : []
           content {
             name       = "pgdata"
             mount_path = "/var/lib/postgresql"
