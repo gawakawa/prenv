@@ -16,6 +16,7 @@ flowchart LR
     repoA -->|preview label| build[Cloud Build]
     repoB -->|preview label| build
     build -->|push| ar[Artifact Registry]
+    build -->|push| ar
 
     subgraph iapA["IAP"]
         subgraph "Cloud Run: PR #12"
