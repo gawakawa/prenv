@@ -20,11 +20,22 @@ const MessagesPanel = () => {
 			) : isError ? (
 				<p className="notice error">{error.message}</p>
 			) : (
-				<ul className="messages-list">
-					{messages.map((m) => (
-						<li key={m.id}>{m.body}</li>
-					))}
-				</ul>
+				<table className="env-table">
+					<thead>
+						<tr>
+							<th>id</th>
+							<th>body</th>
+						</tr>
+					</thead>
+					<tbody>
+						{messages.map((m) => (
+							<tr key={m.id}>
+								<td>{m.id}</td>
+								<td>{m.body}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			)}
 		</section>
 	);
