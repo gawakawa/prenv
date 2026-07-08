@@ -22,7 +22,7 @@ Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT
 
 ## DB
 
-DB が必要なアプリは module 組み込みの Postgres sidecar でのみ提供する。
+DB が必要なアプリは `containers` に DB sidecar を宣言する形でのみ提供する。
 ephemeral なプレビュー環境ごとに Cloud SQL 等の永続インスタンスを用意するのは
 コストに見合わない。
 
