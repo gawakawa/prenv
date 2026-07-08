@@ -20,6 +20,10 @@ ingress = `frontend`(SPA + `/api/*` → `localhost:8081` プロキシ)、
 IAP Cookie はホストスコープなのでクロスオリジン呼び出し不可 → 同一オリジン必須。
 Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT=8081` を明示。
 
+3 コンテナは terraform 上 role ごとの同じ形のデータとして定義する。
+postgres に残る volume、`POSTGRES_*` env、runtime initdb は postgres の永続化に由来する差であり、
+sidecar 配置に起因する差ではない。
+
 ## アクセス制御
 
 - プレビューは IAP で保護。許可された identity のみアクセス可、公開(allUsers)は無し。
