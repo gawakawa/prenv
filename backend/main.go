@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -90,6 +91,38 @@ func selectPrenvs(ctx context.Context, db *sql.DB) ([]Prenv, error) {
 	return prenvs, nil
 }
 
+// syncPrenvs refreshes the DB from Cloud Run/GCS. Cloud Run and GCS are
+// independent sources: a GCS-specific failure still lets the currently
+// running prenvs get upserted, only the torn-down marking step is skipped.
+func syncPrenvs(ctx context.Context, db *sql.DB, runClient *run.ServicesClient, gcsClient *storage.Client, gcsBucket, repo, runningPrefix string) error {
+	running, err := listRunningPrenvs(ctx, runClient, runningPrefix)
+	if err != nil {
+		return fmt.Errorf("list running prenvs: %w", err)
+	}
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck // no-op once Commit succeeds
+
+	if err := upsertRunningPrenvs(ctx, tx, running); err != nil {
+		return fmt.Errorf("upsert running prenvs: %w", err)
+	}
+
+	if gcsClient != nil {
+		tornDown, err := listTornDownPRNumbers(ctx, gcsClient, gcsBucket, repo, running)
+		if err != nil {
+			return fmt.Errorf("list torn-down prenvs: %w", err)
+		}
+		if err := markTornDown(ctx, tx, tornDown); err != nil {
+			return fmt.Errorf("mark torn down: %w", err)
+		}
+	}
+
+	return tx.Commit()
+}
+
 func main() {
 	db, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
 	if err != nil {
@@ -116,31 +149,11 @@ func main() {
 
 		// Refresh the DB from Cloud Run/GCS when monitoring is available, but
 		// always fall back to serving whatever prenvs are already in the DB —
-		// a monitoring outage shouldn't take down the whole dashboard.
-		if runClient != nil && gcsClient != nil {
-			running, err := listRunningPrenvs(ctx, runClient, runningPrefix)
-			if failRequest(w, err) {
-				return
-			}
-			tornDown, err := listTornDownPRNumbers(ctx, gcsClient, gcsBucket, repo, running)
-			if failRequest(w, err) {
-				return
-			}
-
-			tx, err := db.BeginTx(ctx, nil)
-			if failRequest(w, err) {
-				return
-			}
-			defer tx.Rollback() //nolint:errcheck // no-op once Commit succeeds
-
-			if failRequest(w, upsertRunningPrenvs(ctx, tx, running)) {
-				return
-			}
-			if failRequest(w, markTornDown(ctx, tx, tornDown)) {
-				return
-			}
-			if failRequest(w, tx.Commit()) {
-				return
+		// a monitoring outage (client unavailable, or any error during sync)
+		// shouldn't take down the whole dashboard.
+		if runClient != nil {
+			if err := syncPrenvs(ctx, db, runClient, gcsClient, gcsBucket, repo, runningPrefix); err != nil {
+				log.Printf("prenv sync failed, serving possibly-stale DB data: %v", err)
 			}
 		}
 
