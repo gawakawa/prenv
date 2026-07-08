@@ -10,7 +10,7 @@ module "preview" {
   # Exactly one container must set `port` (Cloud Run ingress). Every
   # `depends_on` target must define `startup_probe`, or Cloud Run rejects the
   # deploy with a 400. See the module's README for the full schema.
-  # Remove the `postgres` entry and `volumes` below if the app doesn't use a DB.
+  # Remove the `db` entry and `volumes` below if the app doesn't use a DB.
   containers = [
     {
       name  = "app"
@@ -19,10 +19,10 @@ module "preview" {
       env = [
         { name = "DATABASE_URL", value = "postgres://postgres@localhost:5432/app?sslmode=disable" },
       ]
-      depends_on = ["postgres"]
+      depends_on = ["db"]
     },
     {
-      name  = "postgres"
+      name  = "db"
       image = lookup(var.images, "db", "postgres:18-alpine")
       env = [
         { name = "POSTGRES_DB", value = "app" },

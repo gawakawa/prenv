@@ -6,7 +6,7 @@ granted IAP access can reach its `.run.app` URL.
 
 Callers supply their own application containers via `containers`; the module
 always owns naming, `launch_stage`, and IAP. See `terraform/env/preview` for a
-calling example, including how to add a Postgres sidecar.
+calling example, including how to add a DB sidecar.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

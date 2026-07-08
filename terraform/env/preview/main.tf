@@ -5,7 +5,7 @@ locals {
   # defaults here are placeholders used only for teardown, where no build happens.
   frontend_image = lookup(var.images, "frontend", "us-docker.pkg.dev/cloudrun/container/hello")
   backend_image  = lookup(var.images, "backend", "us-docker.pkg.dev/cloudrun/container/hello")
-  postgres_image = lookup(var.images, "db", "postgres:18-alpine")
+  db_image       = lookup(var.images, "db", "postgres:18-alpine")
 }
 
 module "preview" {
@@ -40,12 +40,12 @@ module "preview" {
         { name = "PORT", value = tostring(local.backend_port) },
         { name = "DATABASE_URL", value = "postgres://postgres@localhost:5432/app?sslmode=disable" },
       ]
-      depends_on    = ["postgres"]
+      depends_on    = ["db"]
       startup_probe = { tcp_port = local.backend_port }
     },
     {
-      name  = "postgres"
-      image = local.postgres_image
+      name  = "db"
+      image = local.db_image
       env = [
         { name = "POSTGRES_DB", value = "app" },
         { name = "POSTGRES_HOST_AUTH_METHOD", value = "trust" },
