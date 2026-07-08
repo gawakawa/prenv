@@ -9,23 +9,27 @@ A Google Cloud version of the preview environment setup in
 ```mermaid
 flowchart LR
     subgraph "GitHub"
-        pr1["repo-a PR #12"]
-        pr2["repo-b PR #34"]
+        repoA[Repo A]
+        repoB[Repo B]
     end
 
-    pr1 --> build[Cloud Build]
-    pr2 --> build
+    repoA --> build[Cloud Build]
+    repoB --> build
     build --> ar[Artifact Registry]
 
-    subgraph "Identity-Aware Proxy + Cloud Run: repo-a PR #12"
-        f1[frontend]
-        b1[backend]
-        d1[db]
+    subgraph iapA["IAP"]
+        subgraph "Cloud Run: PR #12"
+            f1[frontend]
+            b1[backend]
+            d1[db]
+        end
     end
-    subgraph "Identity-Aware Proxy + Cloud Run: repo-b PR #34"
-        f2[frontend]
-        b2[backend]
-        d2[db]
+    subgraph iapB["IAP"]
+        subgraph "Cloud Run: PR #34"
+            f2[frontend]
+            b2[backend]
+            d2[db]
+        end
     end
 
     ar -->|deploy| f1
