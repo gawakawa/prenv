@@ -99,19 +99,11 @@ body {
 	color: #92400e;
 }
 
-.badge-pending {
-	background: #f3f4f6;
-	color: #6b7280;
-}
-
-.badge-unknown {
-	background: #f3f4f6;
-	color: #6b7280;
-}
-
+.badge-pending,
+.badge-unknown,
 .badge-torn_down {
 	background: #f3f4f6;
-	color: #9ca3af;
+	color: #6b7280;
 }
 
 .env-link {
