@@ -106,27 +106,28 @@ func main() {
 	runningPrefix := repoSlug(repo) + "-pr-"
 
 	http.HandleFunc("GET /api/prenvs", func(w http.ResponseWriter, r *http.Request) {
-		if runClient == nil || gcsClient == nil {
-			http.Error(w, "monitoring unavailable", http.StatusServiceUnavailable)
-			return
-		}
-
 		ctx := r.Context()
 
-		running, err := listRunningPrenvs(ctx, runClient, runningPrefix)
-		if failRequest(w, err) {
-			return
+		// Refresh the DB from Cloud Run/GCS when monitoring is available, but
+		// always fall back to serving whatever prenvs are already in the DB —
+		// a monitoring outage shouldn't take down the whole dashboard.
+		if runClient != nil && gcsClient != nil {
+			running, err := listRunningPrenvs(ctx, runClient, runningPrefix)
+			if failRequest(w, err) {
+				return
+			}
+			tornDown, err := listTornDownPRNumbers(ctx, gcsClient, gcsBucket, repo, running)
+			if failRequest(w, err) {
+				return
+			}
+			if failRequest(w, upsertRunningPrenvs(ctx, db, running)) {
+				return
+			}
+			if failRequest(w, markTornDown(ctx, db, tornDown)) {
+				return
+			}
 		}
-		tornDown, err := listTornDownPRNumbers(ctx, gcsClient, gcsBucket, repo, running)
-		if failRequest(w, err) {
-			return
-		}
-		if failRequest(w, upsertRunningPrenvs(ctx, db, running)) {
-			return
-		}
-		if failRequest(w, markTornDown(ctx, db, tornDown)) {
-			return
-		}
+
 		prenvs, err := selectPrenvs(ctx, db)
 		if failRequest(w, err) {
 			return
