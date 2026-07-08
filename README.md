@@ -4,6 +4,39 @@ Per-PR preview environments on Google Cloud: deploy on a label, tear down when t
 A Google Cloud version of the preview environment setup in
 [this blog post](https://www.m3tech.blog/entry/2026/06/16/153849).
 
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph "GitHub"
+        repoA["Repo A PR #12"]
+        repoB["Repo B PR #34"]
+    end
+
+    repoA -->|preview label| build[Cloud Build]
+    repoB -->|preview label| build
+    build -->|push| ar[Artifact Registry]
+    build -->|push| ar
+
+    subgraph iapA["IAP"]
+        subgraph "Cloud Run: PR #12"
+            f1[frontend]
+            b1[backend]
+            d1[db]
+        end
+    end
+    subgraph iapB["IAP"]
+        subgraph "Cloud Run: PR #34"
+            f2[frontend]
+            b2[backend]
+            d2[db]
+        end
+    end
+
+    ar -->|deploy| f1
+    ar -->|deploy| f2
+```
+
 ## Structure
 
 ```
@@ -42,5 +75,5 @@ See `docs/DESIGN.md` for how the module and reusable workflows are referenced.
 
 ## More
 
-- `docs/DESIGN.md` — design decisions and rationale.
-- `CONTRIBUTING.md` — dev environment setup and how to submit changes.
+- [docs/DESIGN.md](docs/DESIGN.md) — design decisions and rationale.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — dev environment setup and how to submit changes.
