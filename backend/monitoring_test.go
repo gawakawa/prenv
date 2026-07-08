@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"cloud.google.com/go/run/apiv2/runpb"
 )
@@ -56,6 +57,28 @@ func TestRepoSlugDoesNotCollideAcrossSlashPosition(t *testing.T) {
 	b := repoSlug("gawakawa-prenv/x")
 	if a == b {
 		t.Errorf("repoSlug(%q) and repoSlug(%q) both produced %q, want distinct slugs", "gawakawa/prenv-x", "gawakawa-prenv/x", a)
+	}
+}
+
+func TestWithinGracePeriod(t *testing.T) {
+	now := time.Date(2026, 7, 9, 12, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name    string
+		updated time.Time
+		want    bool
+	}{
+		{"just updated", now, true},
+		{"1 minute ago", now.Add(-1 * time.Minute), true},
+		{"9m59s ago, just inside the window", now.Add(-9*time.Minute - 59*time.Second), true},
+		{"exactly at the boundary", now.Add(-tornDownGracePeriod), false},
+		{"11 minutes ago, outside the window", now.Add(-11 * time.Minute), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := withinGracePeriod(tt.updated, now); got != tt.want {
+				t.Errorf("withinGracePeriod(%v, %v) = %v, want %v", tt.updated, now, got, tt.want)
+			}
+		})
 	}
 }
 

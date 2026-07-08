@@ -55,6 +55,13 @@ func sanitizeSlugPart(s string) string {
 	return strings.ToLower(nonAlnumRun.ReplaceAllString(s, "-"))
 }
 
+// withinGracePeriod reports whether updated is recent enough that the
+// tfstate object it belongs to might still be mid-deploy, per the
+// tornDownGracePeriod comment on listTornDownPrenvs.
+func withinGracePeriod(updated, now time.Time) bool {
+	return updated.After(now.Add(-tornDownGracePeriod))
+}
+
 func parsePRNumber(name, prefix string) (int, bool) {
 	rest, ok := strings.CutPrefix(name, prefix)
 	if !ok {
@@ -160,7 +167,7 @@ func listTornDownPrenvs(ctx context.Context, client *storage.Client, bucket, rep
 	prefix := repo + "/pr/"
 	it := client.Bucket(bucket).Objects(ctx, &storage.Query{Prefix: prefix})
 
-	cutoff := time.Now().Add(-tornDownGracePeriod)
+	now := time.Now()
 	prenvs := []Prenv{}
 	for {
 		attrs, err := it.Next()
@@ -173,7 +180,7 @@ func listTornDownPrenvs(ctx context.Context, client *storage.Client, bucket, rep
 		if !strings.HasSuffix(attrs.Name, "/"+tfstateObjectName) {
 			continue
 		}
-		if attrs.Updated.After(cutoff) {
+		if withinGracePeriod(attrs.Updated, now) {
 			continue
 		}
 		rest := strings.TrimPrefix(attrs.Name, prefix)
