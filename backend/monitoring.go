@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"regexp"
 	"strconv"
@@ -191,6 +192,7 @@ func listTornDownPrenvs(ctx context.Context, client *storage.Client, bucket, rep
 		}
 		prenvs = append(prenvs, Prenv{
 			PRNumber:  n,
+			Name:      fmt.Sprintf("pr-%d", n),
 			Status:    "torn_down",
 			UpdatedAt: attrs.Updated.Format(time.RFC3339),
 		})

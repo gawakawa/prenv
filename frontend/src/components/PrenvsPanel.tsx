@@ -9,8 +9,6 @@ const statusBadgeClass = (status: string): string =>
 	KNOWN_STATUSES.has(status) ? `badge badge-${status}` : 'badge badge-unknown';
 
 const PrenvRow = ({ prenv }: { prenv: Prenv }) => {
-	const displayName = prenv.name || `pr-${prenv.pr_number}`;
-
 	return (
 		<tr>
 			<td>
@@ -26,10 +24,10 @@ const PrenvRow = ({ prenv }: { prenv: Prenv }) => {
 			<td>
 				{prenv.url ? (
 					<a className="env-link" href={prenv.url} target="_blank" rel="noreferrer">
-						{displayName}
+						{prenv.name}
 					</a>
 				) : (
-					displayName
+					prenv.name
 				)}
 			</td>
 			<td>
