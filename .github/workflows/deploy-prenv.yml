@@ -37,22 +37,17 @@ jobs:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SA }}
 
-      - name: Resolve image reference
+      - name: Resolve image references
         id: image
         env:
           AR_REPO: ${{ vars.AR_REPO }}
           GH_REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           repo="${GH_REPO,,}"
-          backend_tag=$(git rev-parse  "HEAD:backend"  "HEAD:docker/backend/Dockerfile"  | sha256sum | cut -c1-16)
-          db_tag=$(git rev-parse       "HEAD:db"       "HEAD:docker/db/Dockerfile"       | sha256sum | cut -c1-16)
-          frontend_tag=$(git rev-parse "HEAD:frontend" "HEAD:docker/frontend/Dockerfile" | sha256sum | cut -c1-16)
-          {
-            echo "ref=${AR_REPO}/${repo}/backend:${backend_tag}"
-            echo "db_ref=${AR_REPO}/${repo}/db:${db_tag}"
-            echo "frontend_ref=${AR_REPO}/${repo}/frontend:${frontend_tag}"
-          } >> "$GITHUB_OUTPUT"
+          for role in backend db frontend; do
+            tag=$(git rev-parse "HEAD:$role" "HEAD:docker/$role/Dockerfile" | sha256sum | cut -c1-16)
+            echo "${role}_ref=${AR_REPO}/${repo}/${role}:${tag}" >> "$GITHUB_OUTPUT"
+          done
 
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@847eaa4afeb791b06daa46e8eafa8b1b68d7cfb4 # v2.0.1
@@ -63,7 +58,7 @@ jobs:
         id: build-backend
         background: true
         env:
-          REF: ${{ steps.image.outputs.ref }}
+          REF: ${{ steps.image.outputs.backend_ref }}
         run: .github/scripts/build-image.sh backend "$REF"
 
       - name: Build db image
@@ -96,7 +91,7 @@ jobs:
         env:
           TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
           TF_VAR_pr_number: ${{ github.event.pull_request.number }}
-          TF_VAR_image: ${{ steps.image.outputs.ref }}
+          TF_VAR_backend_image: ${{ steps.image.outputs.backend_ref }}
           TF_VAR_db_image: ${{ steps.image.outputs.db_ref }}
           TF_VAR_frontend_image: ${{ steps.image.outputs.frontend_ref }}
         run: |
