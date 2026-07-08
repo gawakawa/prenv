@@ -63,8 +63,8 @@ Copy `templates/main.tf`, `templates/variables.tf`, `templates/versions.tf`,
 `main.tf`'s `containers` list to describe this repo's application — see
 `terraform/modules/preview/README.md` in prenv for the schema and validation
 rules (exactly one container needs `port`; every `depends_on` target needs a
-`startup_probe`). If the app needs Postgres, uncomment the `postgres` container
-and `volumes` block already sketched in the template.
+`startup_probe`). The template includes a `postgres` container and `volumes`
+block by default; remove both if the app doesn't use a DB.
 
 ## Manual steps not covered
 
