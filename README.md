@@ -9,12 +9,12 @@ A Google Cloud version of the preview environment setup in
 ```mermaid
 flowchart LR
     subgraph "GitHub"
-        repoA[Repo A]
-        repoB[Repo B]
+        repoA["Repo A PR #12"]
+        repoB["Repo B PR #34"]
     end
 
-    repoA -->|PR| build[Cloud Build]
-    repoB -->|PR| build
+    repoA -->|preview label| build[Cloud Build]
+    repoB -->|preview label| build
     build -->|push| ar[Artifact Registry]
 
     subgraph iapA["IAP"]
