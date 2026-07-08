@@ -34,7 +34,7 @@ func main() {
 			http.Error(w, "monitoring unavailable", http.StatusServiceUnavailable)
 			return
 		}
-		envs, err := listEnvironments(r.Context(), runClient)
+		envs, err := listRunningPrenvs(r.Context(), runClient)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

@@ -20,7 +20,7 @@ const (
 	parent  = "projects/" + project + "/locations/" + region
 )
 
-type Environment struct {
+type Prenv struct {
 	PRNumber  int    `json:"pr_number"`
 	Name      string `json:"name"`
 	URL       string `json:"url"`
@@ -66,11 +66,11 @@ func mapStatus(state runpb.Condition_State) string {
 	}
 }
 
-func toEnvironment(svc *runpb.Service) (Environment, bool) {
+func toPrenv(svc *runpb.Service) (Prenv, bool) {
 	base := path.Base(svc.GetName())
 	n, ok := parsePRNumber(base)
 	if !ok {
-		return Environment{}, false
+		return Prenv{}, false
 	}
 
 	var image string
@@ -81,7 +81,7 @@ func toEnvironment(svc *runpb.Service) (Environment, bool) {
 		}
 	}
 
-	return Environment{
+	return Prenv{
 		PRNumber:  n,
 		Name:      base,
 		URL:       svc.GetUri(),
@@ -91,10 +91,10 @@ func toEnvironment(svc *runpb.Service) (Environment, bool) {
 	}, true
 }
 
-func listEnvironments(ctx context.Context, client *run.ServicesClient) ([]Environment, error) {
+func listRunningPrenvs(ctx context.Context, client *run.ServicesClient) ([]Prenv, error) {
 	it := client.ListServices(ctx, &runpb.ListServicesRequest{Parent: parent})
 
-	envs := []Environment{}
+	prenvs := []Prenv{}
 	for {
 		svc, err := it.Next()
 		if err == iterator.Done {
@@ -103,14 +103,14 @@ func listEnvironments(ctx context.Context, client *run.ServicesClient) ([]Enviro
 		if err != nil {
 			return nil, err
 		}
-		if env, ok := toEnvironment(svc); ok {
-			envs = append(envs, env)
+		if p, ok := toPrenv(svc); ok {
+			prenvs = append(prenvs, p)
 		}
 	}
 
-	slices.SortFunc(envs, func(a, b Environment) int {
+	slices.SortFunc(prenvs, func(a, b Prenv) int {
 		return cmp.Compare(a.PRNumber, b.PRNumber)
 	})
 
-	return envs, nil
+	return prenvs, nil
 }
