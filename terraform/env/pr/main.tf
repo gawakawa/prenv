@@ -1,9 +1,6 @@
 locals {
   backend_port = 8081
 
-  # Each entry describes one Cloud Run container by role. Fields that don't
-  # apply to a role (volume_mount, startup_probe_port) are null and skipped
-  # via dynamic blocks below, so all three roles share the same shape.
   containers = {
     frontend = {
       image              = var.frontend_image
