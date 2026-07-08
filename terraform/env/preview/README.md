@@ -49,6 +49,7 @@ No resources.
 | <a name="input_pr_number"></a> [pr\_number](#input\_pr\_number) | Pull request number. Used to name and isolate the preview environment. | `number` | n/a | yes |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Google Cloud project ID. | `string` | n/a | yes |
 | <a name="input_repo"></a> [repo](#input\_repo) | GitHub repository in OWNER/REPO format. Disambiguates the Cloud Run service name when multiple repositories share this managed project. | `string` | n/a | yes |
+| <a name="input_tfstate_bucket"></a> [tfstate\_bucket](#input\_tfstate\_bucket) | GCS bucket holding per-PR Terraform state. Read by the backend container to discover PR numbers for previews that have been torn down. | `string` | n/a | yes |
 | <a name="input_images"></a> [images](#input\_images) | Map of image name (backend, db, frontend) to fully-qualified image reference, built and passed in by CI. Empty on teardown, where no build happens and placeholder defaults apply. | `map(string)` | `{}` | no |
 | <a name="input_region"></a> [region](#input\_region) | Region for the Cloud Run service. | `string` | `"asia-northeast1"` | no |
 

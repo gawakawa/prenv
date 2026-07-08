@@ -24,3 +24,8 @@ variable "images" {
   type        = map(string)
   default     = {}
 }
+
+variable "tfstate_bucket" {
+  description = "GCS bucket holding per-PR Terraform state. Read by the backend container to discover PR numbers for previews that have been torn down."
+  type        = string
+}
