@@ -13,9 +13,9 @@ flowchart LR
         repoB[Repo B]
     end
 
-    repoA --> build[Cloud Build]
-    repoB --> build
-    build --> ar[Artifact Registry]
+    repoA -->|PR| build[Cloud Build]
+    repoB -->|PR| build
+    build -->|push| ar[Artifact Registry]
 
     subgraph iapA["IAP"]
         subgraph "Cloud Run: PR #12"
