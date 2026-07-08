@@ -91,8 +91,9 @@ resource "google_cloud_run_v2_service" "preview" {
         mount_path = "/var/lib/postgresql"
       }
       resources {
-        limits   = { cpu = "1", memory = "512Mi" }
-        cpu_idle = true
+        limits            = { cpu = "1", memory = "512Mi" }
+        cpu_idle          = true
+        startup_cpu_boost = true
       }
       startup_probe {
         tcp_socket { port = 5432 }

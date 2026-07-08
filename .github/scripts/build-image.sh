@@ -9,7 +9,6 @@ set -euo pipefail
 
 IMAGE=$1
 REF=$2
-CACHE=$( [ "$IMAGE" = db ] && echo no || echo yes )
 
 if gcloud artifacts docker images describe "$REF" --quiet >/dev/null 2>&1; then
   echo "skip $IMAGE ($REF already exists)"
@@ -20,4 +19,4 @@ gcloud builds submit . \
   --project="${PROJECT_ID}" \
   --config=cloudbuild.yaml \
   --service-account="projects/${PROJECT_ID}/serviceAccounts/${BUILD_SA}" \
-  --substitutions="_IMAGE=${IMAGE},_REF=${REF},_CACHE=${CACHE}"
+  --substitutions="_IMAGE=${IMAGE},_REF=${REF}"
