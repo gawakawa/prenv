@@ -49,7 +49,7 @@ resource "google_storage_bucket" "tfstate" {
 
 # Cloud Run's default runtime identity reads tfstate objects to discover PR
 # numbers for previews that have been torn down (see
-# backend/monitoring.go's listTornDownPRNumbers, which calls Objects() — a
+# backend/monitoring.go's listPrenvsFromTfstate, which calls Objects() — a
 # storage.objects.list operation). This identity is shared by every onboarded
 # repository's preview services, so ideally this grant would be restricted to
 # each repository's own tfstate prefix. That isn't possible here: GCS
