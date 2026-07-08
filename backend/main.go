@@ -45,13 +45,14 @@ func upsertRunningPrenvs(ctx context.Context, db *sql.DB, prenvs []Prenv) error 
 
 // markTornDown flips status to "torn_down" and clears the now-dead url for PR
 // numbers no longer running, while preserving name/commit_sha as historical
-// reference.
+// reference. It only updates rows this backend has actually observed live
+// before (via upsertRunningPrenvs) — a PR number found only in tfstate is not
+// inserted as a blank placeholder.
 func markTornDown(ctx context.Context, db *sql.DB, prNumbers []int) error {
 	for _, n := range prNumbers {
 		_, err := db.ExecContext(ctx, `
-			INSERT INTO prenvs (pr_number, name, url, status, commit_sha, updated_at)
-			VALUES ($1, '', '', 'torn_down', '', now())
-			ON CONFLICT (pr_number) DO UPDATE SET status = 'torn_down', url = ''`,
+			UPDATE prenvs SET status = 'torn_down', url = '', updated_at = now()
+			WHERE pr_number = $1`,
 			n)
 		if err != nil {
 			return err
