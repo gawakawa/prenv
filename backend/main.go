@@ -24,7 +24,13 @@ func failRequest(w http.ResponseWriter, err error) bool {
 	return true
 }
 
-func upsertRunningPrenvs(ctx context.Context, db *sql.DB, prenvs []Prenv) error {
+// execer is satisfied by both *sql.DB and *sql.Tx, so upsertRunningPrenvs and
+// markTornDown can run standalone or inside a shared transaction.
+type execer interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func upsertRunningPrenvs(ctx context.Context, db execer, prenvs []Prenv) error {
 	for _, p := range prenvs {
 		_, err := db.ExecContext(ctx, `
 			INSERT INTO prenvs (pr_number, name, url, status, commit_sha, updated_at)
@@ -48,7 +54,7 @@ func upsertRunningPrenvs(ctx context.Context, db *sql.DB, prenvs []Prenv) error 
 // reference. It only updates rows this backend has actually observed live
 // before (via upsertRunningPrenvs) — a PR number found only in tfstate is not
 // inserted as a blank placeholder.
-func markTornDown(ctx context.Context, db *sql.DB, prNumbers []int) error {
+func markTornDown(ctx context.Context, db execer, prNumbers []int) error {
 	for _, n := range prNumbers {
 		_, err := db.ExecContext(ctx, `
 			UPDATE prenvs SET status = 'torn_down', url = '', updated_at = now()
@@ -120,10 +126,20 @@ func main() {
 			if failRequest(w, err) {
 				return
 			}
-			if failRequest(w, upsertRunningPrenvs(ctx, db, running)) {
+
+			tx, err := db.BeginTx(ctx, nil)
+			if failRequest(w, err) {
 				return
 			}
-			if failRequest(w, markTornDown(ctx, db, tornDown)) {
+			defer tx.Rollback() //nolint:errcheck // no-op once Commit succeeds
+
+			if failRequest(w, upsertRunningPrenvs(ctx, tx, running)) {
+				return
+			}
+			if failRequest(w, markTornDown(ctx, tx, tornDown)) {
+				return
+			}
+			if failRequest(w, tx.Commit()) {
 				return
 			}
 		}
