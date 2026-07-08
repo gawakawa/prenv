@@ -47,9 +47,9 @@ No modules.
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_pr_number"></a> [pr\_number](#input\_pr\_number) | Pull request number. Used to name and isolate the preview environment. | `number` | n/a | yes |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Google Cloud project ID. | `string` | n/a | yes |
-| <a name="input_db_image"></a> [db\_image](#input\_db\_image) | Postgres sidecar image with migration and seed SQL baked in via initdb. Defaults to vanilla postgres:18-alpine (for teardown); replace with the built db image for deploy. | `string` | `"postgres:18-alpine"` | no |
+| <a name="input_backend_image"></a> [backend\_image](#input\_backend\_image) | Backend container image to deploy. Defaults to a public placeholder (for teardown); replace with the built backend image for deploy. | `string` | `"us-docker.pkg.dev/cloudrun/container/hello"` | no |
+| <a name="input_db_image"></a> [db\_image](#input\_db\_image) | Database (postgres) container image to deploy. Defaults to a public placeholder (for teardown); replace with the built db image for deploy. | `string` | `"us-docker.pkg.dev/cloudrun/container/hello"` | no |
 | <a name="input_frontend_image"></a> [frontend\_image](#input\_frontend\_image) | Frontend container image to deploy. Defaults to a public placeholder (for teardown); replace with the built frontend image for deploy. | `string` | `"us-docker.pkg.dev/cloudrun/container/hello"` | no |
-| <a name="input_image"></a> [image](#input\_image) | Container image to deploy. Defaults to a public placeholder; replace with your app image. | `string` | `"us-docker.pkg.dev/cloudrun/container/hello"` | no |
 | <a name="input_region"></a> [region](#input\_region) | Region for the Cloud Run service. | `string` | `"asia-northeast1"` | no |
 
 ## Outputs

@@ -14,16 +14,16 @@ variable "pr_number" {
   type        = number
 }
 
-variable "image" {
-  description = "Container image to deploy. Defaults to a public placeholder; replace with your app image."
+variable "backend_image" {
+  description = "Backend container image to deploy. Defaults to a public placeholder (for teardown); replace with the built backend image for deploy."
   type        = string
   default     = "us-docker.pkg.dev/cloudrun/container/hello"
 }
 
 variable "db_image" {
-  description = "Postgres sidecar image with migration and seed SQL baked in via initdb. Defaults to vanilla postgres:18-alpine (for teardown); replace with the built db image for deploy."
+  description = "Database (postgres) container image to deploy. Defaults to a public placeholder (for teardown); replace with the built db image for deploy."
   type        = string
-  default     = "postgres:18-alpine"
+  default     = "us-docker.pkg.dev/cloudrun/container/hello"
 }
 
 variable "frontend_image" {

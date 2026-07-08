@@ -1,5 +1,41 @@
 locals {
   backend_port = 8081
+
+  # Each entry describes one Cloud Run container by role. Fields that don't
+  # apply to a role (volume_mount, startup_probe_port) are null and skipped
+  # via dynamic blocks below, so all three roles share the same shape.
+  containers = {
+    frontend = {
+      image              = var.frontend_image
+      ports              = [8080]
+      env                = { BACKEND_PORT = tostring(local.backend_port) }
+      volume_mount       = null
+      startup_probe_port = null
+      depends_on         = ["backend"]
+    }
+    backend = {
+      image = var.backend_image
+      ports = []
+      env = {
+        PORT         = tostring(local.backend_port)
+        DATABASE_URL = "postgres://postgres@localhost:5432/app?sslmode=disable"
+      }
+      volume_mount       = null
+      startup_probe_port = local.backend_port
+      depends_on         = ["postgres"]
+    }
+    postgres = {
+      image = var.db_image
+      ports = []
+      env = {
+        POSTGRES_DB               = "app"
+        POSTGRES_HOST_AUTH_METHOD = "trust"
+      }
+      volume_mount       = { name = "pgdata", mount_path = "/var/lib/postgresql" }
+      startup_probe_port = 5432
+      depends_on         = []
+    }
+  }
 }
 
 resource "google_cloud_run_v2_service" "preview" {
@@ -33,74 +69,55 @@ resource "google_cloud_run_v2_service" "preview" {
       }
     }
 
-    containers {
-      name  = "frontend"
-      image = var.frontend_image
-      ports { container_port = 8080 }
-      env {
-        name  = "BACKEND_PORT"
-        value = tostring(local.backend_port)
-      }
-      resources {
-        limits            = { cpu = "1", memory = "512Mi" }
-        cpu_idle          = true
-        startup_cpu_boost = true
-      }
-      depends_on = ["backend"]
-    }
+    dynamic "containers" {
+      for_each = local.containers
+      content {
+        name  = containers.key
+        image = containers.value.image
 
-    containers {
-      name  = "backend"
-      image = var.image
-      env {
-        name  = "PORT"
-        value = tostring(local.backend_port)
-      }
-      env {
-        name  = "DATABASE_URL"
-        value = "postgres://postgres@localhost:5432/app?sslmode=disable"
-      }
-      resources {
-        limits            = { cpu = "1", memory = "512Mi" }
-        cpu_idle          = true
-        startup_cpu_boost = true
-      }
-      startup_probe {
-        tcp_socket { port = local.backend_port }
-        initial_delay_seconds = 5
-        period_seconds        = 5
-        timeout_seconds       = 3
-        failure_threshold     = 24
-      }
-      depends_on = ["postgres"]
-    }
+        dynamic "ports" {
+          for_each = containers.value.ports
+          content {
+            container_port = ports.value
+          }
+        }
 
-    containers {
-      name  = "postgres"
-      image = var.db_image
-      env {
-        name  = "POSTGRES_DB"
-        value = "app"
-      }
-      env {
-        name  = "POSTGRES_HOST_AUTH_METHOD"
-        value = "trust"
-      }
-      volume_mounts {
-        name       = "pgdata"
-        mount_path = "/var/lib/postgresql"
-      }
-      resources {
-        limits            = { cpu = "1", memory = "512Mi" }
-        cpu_idle          = true
-        startup_cpu_boost = true
-      }
-      startup_probe {
-        tcp_socket { port = 5432 }
-        initial_delay_seconds = 5
-        period_seconds        = 5
-        timeout_seconds       = 3
-        failure_threshold     = 24
+        dynamic "env" {
+          for_each = containers.value.env
+          content {
+            name  = env.key
+            value = env.value
+          }
+        }
+
+        dynamic "volume_mounts" {
+          for_each = containers.value.volume_mount == null ? [] : [containers.value.volume_mount]
+          content {
+            name       = volume_mounts.value.name
+            mount_path = volume_mounts.value.mount_path
+          }
+        }
+
+        resources {
+          limits            = { cpu = "1", memory = "512Mi" }
+          cpu_idle          = true
+          startup_cpu_boost = true
+        }
+
+        dynamic "startup_probe" {
+          for_each = containers.value.startup_probe_port == null ? [] : [containers.value.startup_probe_port]
+          content {
+            tcp_socket {
+              port = startup_probe.value
+            }
+            initial_delay_seconds = 5
+            period_seconds        = 5
+            timeout_seconds       = 3
+            failure_threshold     = 24
+          }
+        }
+
+        depends_on = containers.value.depends_on
       }
     }
   }
