@@ -82,7 +82,7 @@ const PrenvsPanel = () => {
 				) : (
 					<p className="notice error">{error.message}</p>
 				)
-			) : prenvs.length === 0 ? (
+			) : prenvs.every((p) => p.status === 'torn_down') ? (
 				<p className="empty-state">プレビュー環境はまだありません</p>
 			) : (
 				<table className="env-table">
