@@ -1,11 +1,9 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"path"
 	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -141,10 +139,6 @@ func listRunningPrenvs(ctx context.Context, client *run.ServicesClient, prefix s
 		}
 	}
 
-	slices.SortFunc(prenvs, func(a, b Prenv) int {
-		return cmp.Compare(a.PRNumber, b.PRNumber)
-	})
-
 	return prenvs, nil
 }
 
@@ -202,8 +196,5 @@ func listTornDownPrenvs(ctx context.Context, client *storage.Client, bucket, rep
 		})
 	}
 
-	slices.SortFunc(prenvs, func(a, b Prenv) int {
-		return cmp.Compare(a.PRNumber, b.PRNumber)
-	})
 	return prenvs, nil
 }
