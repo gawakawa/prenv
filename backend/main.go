@@ -94,7 +94,7 @@ func main() {
 		if failRequest(w, err) {
 			return
 		}
-		tornDown, err := listTornDownPrenvs(ctx, gcsClient, gcsBucket, repo, running)
+		tornDown, err := listPrenvsFromTfstate(ctx, gcsClient, gcsBucket, repo, runningPrefix, running)
 		if failRequest(w, err) {
 			return
 		}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"path"
 	"regexp"
 	"strconv"
@@ -55,8 +54,9 @@ func sanitizeSlugPart(s string) string {
 }
 
 // withinGracePeriod reports whether updated is recent enough that the
-// tfstate object it belongs to might still be mid-deploy, per the
-// tornDownGracePeriod comment on listTornDownPrenvs.
+// tfstate object it belongs to was touched very recently — either because a
+// deploy just started or a teardown just finished, per the tornDownGracePeriod
+// comment on listPrenvsFromTfstate.
 func withinGracePeriod(updated, now time.Time) bool {
 	return updated.After(now.Add(-tornDownGracePeriod))
 }
@@ -143,17 +143,24 @@ func listRunningPrenvs(ctx context.Context, client *run.ServicesClient, prefix s
 	return prenvs, nil
 }
 
-// listTornDownPrenvs returns a Prenv per gs://<bucket>/<repo>/pr/<N>/default.tfstate
+// listPrenvsFromTfstate returns a Prenv per gs://<bucket>/<repo>/pr/<N>/default.tfstate
 // object that isn't in live, mirroring the object-discovery approach
-// reusable-gc-prenv.yml uses. Its UpdatedAt is the tfstate object's own
-// Updated time (the closest available signal for when it was torn down),
-// since there's no persisted history to draw a real teardown time from.
-// Objects touched within tornDownGracePeriod are skipped: a tfstate write can
-// land before the matching Cloud Run service is visible via ListServices, so
-// a PR mid-deploy must not be misread as torn down. Listing individual
-// objects (rather than grouping by common prefix) is required to read each
-// object's Updated time for this check.
-func listTornDownPrenvs(ctx context.Context, client *storage.Client, bucket, repo string, live []Prenv) ([]Prenv, error) {
+// reusable-gc-prenv.yml uses. Its Name mirrors the Cloud Run service name
+// format (runningPrefix + PR number) so the same PR looks the same whether
+// it's currently live or not. Its UpdatedAt is the tfstate object's own
+// Updated time (the closest available signal, since there's no persisted
+// history to draw a real teardown time from).
+//
+// A tfstate write lands both when a PR starts deploying (before the Cloud
+// Run service is visible via ListServices) and when a PR finishes tearing
+// down — the two can't be told apart from the object's Updated time alone.
+// Objects touched within tornDownGracePeriod are therefore reported as
+// "pending" rather than "torn_down", so a PR never silently vanishes from
+// the list; the next poll resolves it once the grace period elapses or the
+// service reappears in live. Listing individual objects (rather than
+// grouping by common prefix) is required to read each object's Updated time
+// for this check.
+func listPrenvsFromTfstate(ctx context.Context, client *storage.Client, bucket, repo, runningPrefix string, live []Prenv) ([]Prenv, error) {
 	liveSet := make(map[int]bool, len(live))
 	for _, p := range live {
 		liveSet[p.PRNumber] = true
@@ -175,9 +182,6 @@ func listTornDownPrenvs(ctx context.Context, client *storage.Client, bucket, rep
 		if !strings.HasSuffix(attrs.Name, "/"+tfstateObjectName) {
 			continue
 		}
-		if withinGracePeriod(attrs.Updated, now) {
-			continue
-		}
 		rest := strings.TrimPrefix(attrs.Name, prefix)
 		seg, _, ok := strings.Cut(rest, "/")
 		if !ok {
@@ -190,10 +194,14 @@ func listTornDownPrenvs(ctx context.Context, client *storage.Client, bucket, rep
 		if liveSet[n] {
 			continue
 		}
+		status := "torn_down"
+		if withinGracePeriod(attrs.Updated, now) {
+			status = "pending"
+		}
 		prenvs = append(prenvs, Prenv{
 			PRNumber:  n,
-			Name:      fmt.Sprintf("pr-%d", n),
-			Status:    "torn_down",
+			Name:      runningPrefix + strconv.Itoa(n),
+			Status:    status,
 			UpdatedAt: attrs.Updated.Format(time.RFC3339),
 		})
 	}
