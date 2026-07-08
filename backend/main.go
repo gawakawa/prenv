@@ -14,6 +14,16 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// failRequest writes a 500 response and reports whether err was non-nil, so
+// callers can write `if failRequest(w, err) { return }`.
+func failRequest(w http.ResponseWriter, err error) bool {
+	if err == nil {
+		return false
+	}
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+	return true
+}
+
 func upsertRunningPrenvs(ctx context.Context, db *sql.DB, prenvs []Prenv) error {
 	for _, p := range prenvs {
 		_, err := db.ExecContext(ctx, `
@@ -33,14 +43,15 @@ func upsertRunningPrenvs(ctx context.Context, db *sql.DB, prenvs []Prenv) error 
 	return nil
 }
 
-// markTornDown flips status to "torn_down" for PR numbers no longer running,
-// preserving whatever name/url/commit_sha/updated_at was last observed live.
+// markTornDown flips status to "torn_down" and clears the now-dead url for PR
+// numbers no longer running, while preserving name/commit_sha as historical
+// reference.
 func markTornDown(ctx context.Context, db *sql.DB, prNumbers []int) error {
 	for _, n := range prNumbers {
 		_, err := db.ExecContext(ctx, `
 			INSERT INTO prenvs (pr_number, name, url, status, commit_sha, updated_at)
 			VALUES ($1, '', '', 'torn_down', '', now())
-			ON CONFLICT (pr_number) DO UPDATE SET status = 'torn_down'`,
+			ON CONFLICT (pr_number) DO UPDATE SET status = 'torn_down', url = ''`,
 			n)
 		if err != nil {
 			return err
@@ -101,26 +112,21 @@ func main() {
 		ctx := r.Context()
 
 		running, err := listRunningPrenvs(ctx, runClient)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if failRequest(w, err) {
 			return
 		}
 		tornDown, err := listTornDownPRNumbers(ctx, gcsClient, gcsBucket, repo, running)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if failRequest(w, err) {
 			return
 		}
-		if err := upsertRunningPrenvs(ctx, db, running); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if failRequest(w, upsertRunningPrenvs(ctx, db, running)) {
 			return
 		}
-		if err := markTornDown(ctx, db, tornDown); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if failRequest(w, markTornDown(ctx, db, tornDown)) {
 			return
 		}
 		prenvs, err := selectPrenvs(ctx, db)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if failRequest(w, err) {
 			return
 		}
 

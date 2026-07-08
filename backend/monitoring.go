@@ -118,7 +118,9 @@ func listRunningPrenvs(ctx context.Context, client *run.ServicesClient) ([]Prenv
 
 // listTornDownPRNumbers returns PR numbers that have a tfstate object under
 // gs://<bucket>/<repo>/pr/<N>/ but are not in live, mirroring the
-// object-listing approach reusable-gc-prenv.yml uses to discover PRs.
+// object-listing approach reusable-gc-prenv.yml uses to discover PRs. The
+// Delimiter groups objects by their PR directory, so each PR yields exactly
+// one entry regardless of how many objects live under it.
 func listTornDownPRNumbers(ctx context.Context, client *storage.Client, bucket, repo string, live []Prenv) ([]int, error) {
 	liveSet := make(map[int]bool, len(live))
 	for _, p := range live {
@@ -126,9 +128,9 @@ func listTornDownPRNumbers(ctx context.Context, client *storage.Client, bucket, 
 	}
 
 	prefix := repo + "/pr/"
-	it := client.Bucket(bucket).Objects(ctx, &storage.Query{Prefix: prefix})
+	it := client.Bucket(bucket).Objects(ctx, &storage.Query{Prefix: prefix, Delimiter: "/"})
 
-	seen := map[int]bool{}
+	nums := []int{}
 	for {
 		attrs, err := it.Next()
 		if err == iterator.Done {
@@ -137,24 +139,19 @@ func listTornDownPRNumbers(ctx context.Context, client *storage.Client, bucket, 
 		if err != nil {
 			return nil, err
 		}
-		rest := strings.TrimPrefix(attrs.Name, prefix)
-		seg, _, ok := strings.Cut(rest, "/")
-		if !ok {
+		if attrs.Prefix == "" {
 			continue
 		}
+		seg := strings.TrimSuffix(strings.TrimPrefix(attrs.Prefix, prefix), "/")
 		n, err := strconv.Atoi(seg)
 		if err != nil {
 			continue
 		}
 		if !liveSet[n] {
-			seen[n] = true
+			nums = append(nums, n)
 		}
 	}
 
-	nums := make([]int, 0, len(seen))
-	for n := range seen {
-		nums = append(nums, n)
-	}
 	slices.Sort(nums)
 	return nums, nil
 }
