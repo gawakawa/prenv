@@ -1,27 +1,4 @@
 locals {
-  postgres_container = {
-    name              = "postgres"
-    image             = var.db_image
-    port              = null
-    depends_on        = []
-    cpu_limit         = "1"
-    memory_limit      = "512Mi"
-    startup_cpu_boost = false
-    env = [
-      { name = "POSTGRES_DB", value = "app" },
-      { name = "POSTGRES_HOST_AUTH_METHOD", value = "trust" },
-    ]
-    startup_probe = {
-      tcp_port              = 5432
-      initial_delay_seconds = 5
-      period_seconds        = 5
-      timeout_seconds       = 3
-      failure_threshold     = 24
-    }
-  }
-
-  containers_all = var.enable_db_sidecar ? concat(var.containers, [local.postgres_container]) : var.containers
-
   # Cloud Run service names are unique per project+region and can't contain
   # "/", so the OWNER/REPO identity is flattened into a single label —
   # otherwise two repos' PR numbers collide when sharing one managed project.
@@ -52,18 +29,21 @@ resource "google_cloud_run_v2_service" "preview" {
     }
 
     dynamic "volumes" {
-      for_each = var.enable_db_sidecar ? [1] : []
+      for_each = { for v in var.volumes : v.name => v }
       content {
-        name = "pgdata"
-        empty_dir {
-          medium     = "MEMORY"
-          size_limit = "256Mi"
+        name = volumes.value.name
+        dynamic "empty_dir" {
+          for_each = volumes.value.empty_dir != null ? [volumes.value.empty_dir] : []
+          content {
+            medium     = empty_dir.value.medium
+            size_limit = empty_dir.value.size_limit
+          }
         }
       }
     }
 
     dynamic "containers" {
-      for_each = { for c in local.containers_all : c.name => c }
+      for_each = { for c in var.containers : c.name => c }
       content {
         name  = containers.value.name
         image = containers.value.image
@@ -84,10 +64,10 @@ resource "google_cloud_run_v2_service" "preview" {
         }
 
         dynamic "volume_mounts" {
-          for_each = containers.value.name == local.postgres_container.name ? [1] : []
+          for_each = containers.value.volume_mounts
           content {
-            name       = "pgdata"
-            mount_path = "/var/lib/postgresql"
+            name       = volume_mounts.value.name
+            mount_path = volume_mounts.value.mount_path
           }
         }
 
