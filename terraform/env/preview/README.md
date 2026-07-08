@@ -16,7 +16,7 @@ time — not hardcoded here:
 
 ```bash
 tofu init -backend-config="bucket=my-project-tfstate" -backend-config="prefix=my-org/my-repo/pr/123"
-tofu apply -var="project_id=my-project" -var="pr_number=123" -var="repo=my-org/my-repo"
+tofu apply -var="project_id=my-project" -var="pr_number=123" -var="repo=my-org/my-repo" -var="tfstate_bucket=my-project-tfstate"
 ```
 
 <!-- BEGIN_TF_DOCS -->
