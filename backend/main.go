@@ -54,12 +54,14 @@ func upsertRunningPrenvs(ctx context.Context, db execer, prenvs []Prenv) error {
 // numbers no longer running, while preserving name/commit_sha as historical
 // reference. It only updates rows this backend has actually observed live
 // before (via upsertRunningPrenvs) — a PR number found only in tfstate is not
-// inserted as a blank placeholder.
+// inserted as a blank placeholder. Rows already torn down are left alone, so
+// updated_at reflects the time of the torn_down transition rather than the
+// time of the most recent poll.
 func markTornDown(ctx context.Context, db execer, prNumbers []int) error {
 	for _, n := range prNumbers {
 		_, err := db.ExecContext(ctx, `
 			UPDATE prenvs SET status = 'torn_down', url = '', updated_at = now()
-			WHERE pr_number = $1`,
+			WHERE pr_number = $1 AND status <> 'torn_down'`,
 			n)
 		if err != nil {
 			return err
