@@ -67,7 +67,8 @@ const PrenvsPanel = () => {
 	} = useQuery({
 		queryKey: ['prenvs'],
 		queryFn: fetchPrenvs,
-		retry: (_, err) => !(err instanceof EnvironmentsUnavailableError),
+		retry: (failureCount, err) =>
+			!(err instanceof EnvironmentsUnavailableError) && failureCount < 3,
 	});
 
 	return (
