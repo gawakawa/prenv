@@ -25,6 +25,32 @@ func failRequest(w http.ResponseWriter, err error) bool {
 	return true
 }
 
+type Message struct {
+	ID   int    `json:"id"`
+	Body string `json:"body"`
+}
+
+func selectMessages(ctx context.Context, db *sql.DB) ([]Message, error) {
+	rows, err := db.QueryContext(ctx, "SELECT id, body FROM messages ORDER BY id")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	messages := []Message{}
+	for rows.Next() {
+		var m Message
+		if err := rows.Scan(&m.ID, &m.Body); err != nil {
+			return nil, err
+		}
+		messages = append(messages, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return messages, nil
+}
+
 // execer is satisfied by both *sql.DB and *sql.Tx, so upsertRunningPrenvs and
 // markTornDown can run standalone or inside a shared transaction.
 type execer interface {
@@ -145,6 +171,16 @@ func main() {
 	gcsBucket := os.Getenv("GCS_BUCKET")
 	repo := os.Getenv("REPO")
 	runningPrefix := repoSlug(repo) + "-pr-"
+
+	http.HandleFunc("GET /api/messages", func(w http.ResponseWriter, r *http.Request) {
+		messages, err := selectMessages(r.Context(), db)
+		if failRequest(w, err) {
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(messages)
+	})
 
 	http.HandleFunc("GET /api/prenvs", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
