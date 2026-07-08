@@ -141,14 +141,17 @@ func listRunningPrenvs(ctx context.Context, client *run.ServicesClient, prefix s
 	return prenvs, nil
 }
 
-// listTornDownPRNumbers returns PR numbers that have a gs://<bucket>/<repo>/pr/<N>/default.tfstate
-// object but are not in live, mirroring the object-discovery approach
-// reusable-gc-prenv.yml uses. Objects touched within tornDownGracePeriod are
-// skipped: a tfstate write can land before the matching Cloud Run service is
-// visible via ListServices, so a PR mid-deploy must not be misread as torn
-// down. Listing individual objects (rather than grouping by common prefix)
-// is required to read each object's Updated time for this check.
-func listTornDownPRNumbers(ctx context.Context, client *storage.Client, bucket, repo string, live []Prenv) ([]int, error) {
+// listTornDownPrenvs returns a Prenv per gs://<bucket>/<repo>/pr/<N>/default.tfstate
+// object that isn't in live, mirroring the object-discovery approach
+// reusable-gc-prenv.yml uses. Its UpdatedAt is the tfstate object's own
+// Updated time (the closest available signal for when it was torn down),
+// since there's no persisted history to draw a real teardown time from.
+// Objects touched within tornDownGracePeriod are skipped: a tfstate write can
+// land before the matching Cloud Run service is visible via ListServices, so
+// a PR mid-deploy must not be misread as torn down. Listing individual
+// objects (rather than grouping by common prefix) is required to read each
+// object's Updated time for this check.
+func listTornDownPrenvs(ctx context.Context, client *storage.Client, bucket, repo string, live []Prenv) ([]Prenv, error) {
 	liveSet := make(map[int]bool, len(live))
 	for _, p := range live {
 		liveSet[p.PRNumber] = true
@@ -158,7 +161,7 @@ func listTornDownPRNumbers(ctx context.Context, client *storage.Client, bucket, 
 	it := client.Bucket(bucket).Objects(ctx, &storage.Query{Prefix: prefix})
 
 	cutoff := time.Now().Add(-tornDownGracePeriod)
-	nums := []int{}
+	prenvs := []Prenv{}
 	for {
 		attrs, err := it.Next()
 		if err == iterator.Done {
@@ -182,11 +185,18 @@ func listTornDownPRNumbers(ctx context.Context, client *storage.Client, bucket, 
 		if err != nil {
 			continue
 		}
-		if !liveSet[n] {
-			nums = append(nums, n)
+		if liveSet[n] {
+			continue
 		}
+		prenvs = append(prenvs, Prenv{
+			PRNumber:  n,
+			Status:    "torn_down",
+			UpdatedAt: attrs.Updated.Format(time.RFC3339),
+		})
 	}
 
-	slices.Sort(nums)
-	return nums, nil
+	slices.SortFunc(prenvs, func(a, b Prenv) int {
+		return cmp.Compare(a.PRNumber, b.PRNumber)
+	})
+	return prenvs, nil
 }
