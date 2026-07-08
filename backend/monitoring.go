@@ -20,6 +20,14 @@ const (
 	project = "gawakawa-prenv"
 	region  = "asia-northeast1"
 	parent  = "projects/" + project + "/locations/" + region
+
+	// tornDownGracePeriod mirrors reusable-gc-prenv.yml's own grace window
+	// (there 3 days, here much shorter): a tfstate object can appear before
+	// the matching Cloud Run service is visible via ListServices, so recently
+	// touched objects are not yet treated as torn down.
+	tornDownGracePeriod = 10 * time.Minute
+
+	tfstateObjectName = "default.tfstate"
 )
 
 type Prenv struct {
@@ -126,11 +134,13 @@ func listRunningPrenvs(ctx context.Context, client *run.ServicesClient, prefix s
 	return prenvs, nil
 }
 
-// listTornDownPRNumbers returns PR numbers that have a tfstate object under
-// gs://<bucket>/<repo>/pr/<N>/ but are not in live, mirroring the
-// object-listing approach reusable-gc-prenv.yml uses to discover PRs. The
-// Delimiter groups objects by their PR directory, so each PR yields exactly
-// one entry regardless of how many objects live under it.
+// listTornDownPRNumbers returns PR numbers that have a gs://<bucket>/<repo>/pr/<N>/default.tfstate
+// object but are not in live, mirroring the object-discovery approach
+// reusable-gc-prenv.yml uses. Objects touched within tornDownGracePeriod are
+// skipped: a tfstate write can land before the matching Cloud Run service is
+// visible via ListServices, so a PR mid-deploy must not be misread as torn
+// down. Listing individual objects (rather than grouping by common prefix)
+// is required to read each object's Updated time for this check.
 func listTornDownPRNumbers(ctx context.Context, client *storage.Client, bucket, repo string, live []Prenv) ([]int, error) {
 	liveSet := make(map[int]bool, len(live))
 	for _, p := range live {
@@ -138,8 +148,9 @@ func listTornDownPRNumbers(ctx context.Context, client *storage.Client, bucket, 
 	}
 
 	prefix := repo + "/pr/"
-	it := client.Bucket(bucket).Objects(ctx, &storage.Query{Prefix: prefix, Delimiter: "/"})
+	it := client.Bucket(bucket).Objects(ctx, &storage.Query{Prefix: prefix})
 
+	cutoff := time.Now().Add(-tornDownGracePeriod)
 	nums := []int{}
 	for {
 		attrs, err := it.Next()
@@ -149,10 +160,17 @@ func listTornDownPRNumbers(ctx context.Context, client *storage.Client, bucket, 
 		if err != nil {
 			return nil, err
 		}
-		if attrs.Prefix == "" {
+		if !strings.HasSuffix(attrs.Name, "/"+tfstateObjectName) {
 			continue
 		}
-		seg := strings.TrimSuffix(strings.TrimPrefix(attrs.Prefix, prefix), "/")
+		if attrs.Updated.After(cutoff) {
+			continue
+		}
+		rest := strings.TrimPrefix(attrs.Name, prefix)
+		seg, _, ok := strings.Cut(rest, "/")
+		if !ok {
+			continue
+		}
 		n, err := strconv.Atoi(seg)
 		if err != nil {
 			continue
