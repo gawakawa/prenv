@@ -7,7 +7,7 @@ locals {
   containers = {
     frontend = {
       image              = var.frontend_image
-      ports              = [8080]
+      port               = 8080
       env                = { BACKEND_PORT = tostring(local.backend_port) }
       volume_mount       = null
       startup_probe_port = null
@@ -15,7 +15,7 @@ locals {
     }
     backend = {
       image = var.backend_image
-      ports = []
+      port  = null
       env = {
         PORT         = tostring(local.backend_port)
         DATABASE_URL = "postgres://postgres@localhost:5432/app?sslmode=disable"
@@ -26,7 +26,7 @@ locals {
     }
     postgres = {
       image = var.db_image
-      ports = []
+      port  = null
       env = {
         POSTGRES_DB               = "app"
         POSTGRES_HOST_AUTH_METHOD = "trust"
@@ -76,7 +76,7 @@ resource "google_cloud_run_v2_service" "preview" {
         image = containers.value.image
 
         dynamic "ports" {
-          for_each = containers.value.ports
+          for_each = containers.value.port == null ? [] : [containers.value.port]
           content {
             container_port = ports.value
           }
