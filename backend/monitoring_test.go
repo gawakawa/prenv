@@ -38,9 +38,9 @@ func TestRepoSlug(t *testing.T) {
 		repo string
 		want string
 	}{
-		{"owner slash repo", "gawakawa/prenv", "gawakawa-prenv"},
-		{"already hyphenated", "my-org/my-repo", "my-org-my-repo"},
-		{"mixed case", "Gawakawa/Prenv", "gawakawa-prenv"},
+		{"owner slash repo", "gawakawa/prenv", "gawakawa--prenv"},
+		{"already hyphenated", "my-org/my-repo", "my-org--my-repo"},
+		{"mixed case", "Gawakawa/Prenv", "gawakawa--prenv"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,6 +48,14 @@ func TestRepoSlug(t *testing.T) {
 				t.Errorf("repoSlug(%q) = %q, want %q", tt.repo, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRepoSlugDoesNotCollideAcrossSlashPosition(t *testing.T) {
+	a := repoSlug("gawakawa/prenv-x")
+	b := repoSlug("gawakawa-prenv/x")
+	if a == b {
+		t.Errorf("repoSlug(%q) and repoSlug(%q) both produced %q, want distinct slugs", "gawakawa/prenv-x", "gawakawa-prenv/x", a)
 	}
 }
 

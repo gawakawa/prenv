@@ -24,8 +24,10 @@ variable "repo" {
   }
 
   validation {
-    condition     = length("${lower(replace(var.repo, "/[^a-zA-Z0-9]+/", "-"))}-pr-${var.pr_number}") <= 63
-    error_message = "The Cloud Run service name derived from repo and pr_number (\"<owner>-<repo>-pr-<N>\") must be 63 characters or fewer. Shorten the repository name."
+    condition = length(
+      "${lower(replace(split("/", var.repo)[0], "/[^a-zA-Z0-9]+/", "-"))}--${lower(replace(split("/", var.repo)[1], "/[^a-zA-Z0-9]+/", "-"))}-pr-${var.pr_number}"
+    ) <= 63
+    error_message = "The Cloud Run service name derived from repo and pr_number (\"<owner>--<repo>-pr-<N>\") must be 63 characters or fewer. Shorten the repository name."
   }
 }
 

@@ -25,7 +25,11 @@ locals {
   # Cloud Run service names are unique per project+region and can't contain
   # "/", so the OWNER/REPO identity is flattened into a single label —
   # otherwise two repos' PR numbers collide when sharing one managed project.
-  repo_slug = lower(replace(var.repo, "/[^a-zA-Z0-9]+/", "-"))
+  # OWNER and REPO are sanitized independently and joined with "--" (rather
+  # than sanitizing "owner/repo" as one string) so that e.g. "a/b-c" and
+  # "a-b/c" can't collapse to the same slug.
+  repo_parts = split("/", var.repo)
+  repo_slug  = "${lower(replace(local.repo_parts[0], "/[^a-zA-Z0-9]+/", "-"))}--${lower(replace(local.repo_parts[1], "/[^a-zA-Z0-9]+/", "-"))}"
 }
 
 resource "google_cloud_run_v2_service" "preview" {

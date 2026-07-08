@@ -41,11 +41,18 @@ type Prenv struct {
 
 var nonAlnumRun = regexp.MustCompile(`[^a-zA-Z0-9]+`)
 
-// repoSlug mirrors terraform/modules/preview's
-// lower(replace(var.repo, "/[^a-zA-Z0-9]+/", "-")), which is how Cloud Run
-// service names are derived from the "owner/repo" string.
+// repoSlug mirrors terraform/modules/preview's repo_slug: OWNER and REPO are
+// sanitized independently and joined with "--" (rather than sanitizing
+// "owner/repo" as one string), so that e.g. "a/b-c" and "a-b/c" can't
+// collapse to the same slug and be mistaken for one another's Cloud Run
+// services.
 func repoSlug(repo string) string {
-	return strings.ToLower(nonAlnumRun.ReplaceAllString(repo, "-"))
+	owner, name, _ := strings.Cut(repo, "/")
+	return sanitizeSlugPart(owner) + "--" + sanitizeSlugPart(name)
+}
+
+func sanitizeSlugPart(s string) string {
+	return strings.ToLower(nonAlnumRun.ReplaceAllString(s, "-"))
 }
 
 func parsePRNumber(name, prefix string) (int, bool) {
