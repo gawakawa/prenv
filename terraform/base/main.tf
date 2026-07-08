@@ -49,11 +49,22 @@ resource "google_storage_bucket" "tfstate" {
 
 # Cloud Run's default runtime identity reads tfstate objects to discover PR
 # numbers for previews that have been torn down (see
-# backend/monitoring.go's listTornDownPRNumbers).
+# backend/monitoring.go's listTornDownPRNumbers). This identity is shared by
+# every onboarded repository's preview services, so the grant is restricted
+# per repository to that repository's own tfstate prefix rather than the
+# whole bucket.
 resource "google_storage_bucket_iam_member" "cloudrun_runtime_tfstate_reader" {
+  for_each = toset(var.github_repositories)
+
   bucket = google_storage_bucket.tfstate.name
   role   = "roles/storage.objectViewer"
   member = "serviceAccount:${data.google_project.this.number}-compute@developer.gserviceaccount.com"
+
+  condition {
+    title       = "tfstate-${replace(each.value, "/", "-")}"
+    description = "Restrict read access to ${each.value}'s tfstate objects."
+    expression  = "resource.name.startsWith(\"projects/_/buckets/${google_storage_bucket.tfstate.name}/objects/${each.value}/pr/\")"
+  }
 }
 
 resource "google_artifact_registry_repository" "preview" {
