@@ -102,6 +102,7 @@ func main() {
 	}
 	gcsBucket := os.Getenv("GCS_BUCKET")
 	repo := os.Getenv("REPO")
+	runningPrefix := repoSlug(repo) + "-pr-"
 
 	http.HandleFunc("GET /api/prenvs", func(w http.ResponseWriter, r *http.Request) {
 		if runClient == nil || gcsClient == nil {
@@ -111,7 +112,7 @@ func main() {
 
 		ctx := r.Context()
 
-		running, err := listRunningPrenvs(ctx, runClient)
+		running, err := listRunningPrenvs(ctx, runClient, runningPrefix)
 		if failRequest(w, err) {
 			return
 		}

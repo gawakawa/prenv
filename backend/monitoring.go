@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"path"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -30,8 +31,17 @@ type Prenv struct {
 	UpdatedAt string `json:"updated_at"`
 }
 
-func parsePRNumber(name string) (int, bool) {
-	rest, ok := strings.CutPrefix(name, "prenv-pr-")
+var nonAlnumRun = regexp.MustCompile(`[^a-zA-Z0-9]+`)
+
+// repoSlug mirrors terraform/modules/preview's
+// lower(replace(var.repo, "/[^a-zA-Z0-9]+/", "-")), which is how Cloud Run
+// service names are derived from the "owner/repo" string.
+func repoSlug(repo string) string {
+	return strings.ToLower(nonAlnumRun.ReplaceAllString(repo, "-"))
+}
+
+func parsePRNumber(name, prefix string) (int, bool) {
+	rest, ok := strings.CutPrefix(name, prefix)
 	if !ok {
 		return 0, false
 	}
@@ -67,9 +77,9 @@ func mapStatus(state runpb.Condition_State) string {
 	}
 }
 
-func toPrenv(svc *runpb.Service) (Prenv, bool) {
+func toPrenv(svc *runpb.Service, prefix string) (Prenv, bool) {
 	base := path.Base(svc.GetName())
-	n, ok := parsePRNumber(base)
+	n, ok := parsePRNumber(base, prefix)
 	if !ok {
 		return Prenv{}, false
 	}
@@ -92,7 +102,7 @@ func toPrenv(svc *runpb.Service) (Prenv, bool) {
 	}, true
 }
 
-func listRunningPrenvs(ctx context.Context, client *run.ServicesClient) ([]Prenv, error) {
+func listRunningPrenvs(ctx context.Context, client *run.ServicesClient, prefix string) ([]Prenv, error) {
 	it := client.ListServices(ctx, &runpb.ListServicesRequest{Parent: parent})
 
 	prenvs := []Prenv{}
@@ -104,7 +114,7 @@ func listRunningPrenvs(ctx context.Context, client *run.ServicesClient) ([]Prenv
 		if err != nil {
 			return nil, err
 		}
-		if p, ok := toPrenv(svc); ok {
+		if p, ok := toPrenv(svc, prefix); ok {
 			prenvs = append(prenvs, p)
 		}
 	}
