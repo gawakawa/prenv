@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchPrenvs, type Prenv } from '../api.ts';
+import { fetchPrenvs, PrenvsUnavailableError, type Prenv } from '../api.ts';
 
 const GITHUB_REPO = 'gawakawa/prenv';
 const formatJst = (iso: string): string =>
@@ -65,7 +65,7 @@ const PrenvsPanel = () => {
 	} = useQuery({
 		queryKey: ['prenvs'],
 		queryFn: fetchPrenvs,
-		retry: (failureCount) => failureCount < 3,
+		retry: (failureCount, err) => !(err instanceof PrenvsUnavailableError) && failureCount < 3,
 	});
 
 	return (
@@ -74,7 +74,13 @@ const PrenvsPanel = () => {
 			{isPending ? (
 				<p className="notice">Loading…</p>
 			) : isError ? (
-				<p className="notice error">{error.message}</p>
+				error instanceof PrenvsUnavailableError ? (
+					<p className="notice">
+						プレビュー環境情報を取得できません。Cloud Run と GCS への接続を確認してください
+					</p>
+				) : (
+					<p className="notice error">{error.message}</p>
+				)
 			) : prenvs.length === 0 ? (
 				<p className="empty-state">プレビュー環境はまだありません</p>
 			) : (
