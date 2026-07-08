@@ -1,5 +1,4 @@
-import EnvironmentsPanel from './components/EnvironmentsPanel.tsx';
-import MessagesPanel from './components/MessagesPanel.tsx';
+import PrenvsPanel from './components/PrenvsPanel.tsx';
 
 const App = () => (
 	<div className="dashboard">
@@ -7,8 +6,7 @@ const App = () => (
 			<h1>prenv Dashboard</h1>
 		</header>
 		<main className="dashboard-main">
-			<EnvironmentsPanel />
-			<MessagesPanel />
+			<PrenvsPanel />
 		</main>
 	</div>
 );

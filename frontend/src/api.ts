@@ -1,6 +1,6 @@
 export class EnvironmentsUnavailableError extends Error {}
 
-export type Environment = {
+export type Prenv = {
 	pr_number: number;
 	name: string;
 	url: string;
@@ -9,26 +9,13 @@ export type Environment = {
 	updated_at: string;
 };
 
-export type Message = {
-	id: number;
-	body: string;
-};
-
-export const fetchEnvironments = async (): Promise<Environment[]> => {
-	const r = await fetch('/api/environments');
+export const fetchPrenvs = async (): Promise<Prenv[]> => {
+	const r = await fetch('/api/prenvs');
 	if (r.status === 503) {
 		throw new EnvironmentsUnavailableError('monitoring unavailable');
 	}
 	if (!r.ok) {
-		throw new Error(`Failed to fetch environments: ${r.status}`);
-	}
-	return r.json();
-};
-
-export const fetchMessages = async (): Promise<Message[]> => {
-	const r = await fetch('/api/messages');
-	if (!r.ok) {
-		throw new Error(`Failed to fetch messages: ${r.status}`);
+		throw new Error(`Failed to fetch prenvs: ${r.status}`);
 	}
 	return r.json();
 };

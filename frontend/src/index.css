@@ -24,18 +24,12 @@ body {
 
 .dashboard-main {
 	display: grid;
-	grid-template-columns: 1fr 280px;
+	grid-template-columns: 1fr;
 	gap: 1.5rem;
 	max-width: 1200px;
 	margin: 1.5rem auto;
 	padding: 0 1.5rem;
 	align-items: start;
-}
-
-@media (max-width: 768px) {
-	.dashboard-main {
-		grid-template-columns: 1fr;
-	}
 }
 
 .panel {
@@ -107,6 +101,11 @@ body {
 .badge-unknown {
 	background: #f3f4f6;
 	color: #6b7280;
+}
+
+.badge-torn_down {
+	background: #f3f4f6;
+	color: #9ca3af;
 }
 
 .env-link {
