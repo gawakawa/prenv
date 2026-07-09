@@ -57,11 +57,19 @@ resource "google_storage_bucket" "tfstate" {
 # condition never matches and silently denies the whole list operation
 # (Google's own IAM conditions docs: "you cannot use the resource.name
 # condition attribute to restrict object listing access to a subset of
-# objects in the bucket"). The role is kept to read-only (objectViewer) as
-# the only available scoping.
+# objects in the bucket").
+#
+# legacyBucketReader rather than objectViewer: this bucket also holds this
+# module's own state (env/pr/base), which is on the same shared grant since
+# it can't be scoped by prefix. objectViewer includes storage.objects.get,
+# which would let any onboarded repo's preview container read that state —
+# including the IAP OAuth client secret it stores. legacyBucketReader grants
+# storage.objects.list without storage.objects.get, which is all
+# listPrenvsFromTfstate needs (it only reads object name/Updated metadata,
+# never object contents).
 resource "google_storage_bucket_iam_member" "cloudrun_runtime_tfstate_reader" {
   bucket = google_storage_bucket.tfstate.name
-  role   = "roles/storage.objectViewer"
+  role   = "roles/storage.legacyBucketReader"
   member = "serviceAccount:${data.google_project.this.number}-compute@developer.gserviceaccount.com"
 }
 
