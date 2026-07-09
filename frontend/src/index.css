@@ -94,12 +94,12 @@ body {
 	color: #991b1b;
 }
 
-.badge-reconciling {
+.badge-reconciling,
+.badge-pending {
 	background: #fef3c7;
 	color: #92400e;
 }
 
-.badge-pending,
 .badge-unknown,
 .badge-torn_down {
 	background: #f3f4f6;
