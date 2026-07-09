@@ -72,7 +72,11 @@ func main() {
 	gcsBucket := os.Getenv("GCS_BUCKET")
 	repo := os.Getenv("REPO")
 	if !strings.Contains(repo, "/") {
-		log.Fatalf("REPO must be in OWNER/REPO form, got %q", repo)
+		// Reuses the monitoring-disabled fallback below (runClient == nil)
+		// instead of log.Fatal, so a bad REPO only takes down /api/prenvs
+		// and not the unrelated /api/messages handler.
+		log.Printf("monitoring disabled: REPO must be in OWNER/REPO form, got %q", repo)
+		runClient = nil
 	}
 	runningPrefix := repoSlug(repo) + "-pr-"
 
