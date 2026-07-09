@@ -65,6 +65,19 @@ resource "google_storage_bucket_iam_member" "cloudrun_runtime_tfstate_reader" {
   member = "serviceAccount:${data.google_project.this.number}-compute@developer.gserviceaccount.com"
 }
 
+# Cloud Run's default runtime identity also calls ListServices (see
+# backend/monitoring.go's listRunningPrenvs) to discover currently running
+# previews. Granted explicitly rather than relying on the legacy Editor role
+# some projects auto-grant to this service account. This is app-level
+# permission, which normally belongs in env/preview, but this identity is
+# shared project-wide — granting it per-PR would let any single PR's destroy
+# revoke it for every other running preview.
+resource "google_project_iam_member" "cloudrun_runtime_run_viewer" {
+  project = var.project_id
+  role    = "roles/run.viewer"
+  member  = "serviceAccount:${data.google_project.this.number}-compute@developer.gserviceaccount.com"
+}
+
 resource "google_artifact_registry_repository" "preview" {
   project       = var.project_id
   location      = var.region
