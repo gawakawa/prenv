@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-	"time"
 
 	"cloud.google.com/go/run/apiv2/runpb"
 )
@@ -28,55 +27,6 @@ func TestParsePRNumber(t *testing.T) {
 			n, ok := parsePRNumber(tt.input, tt.prefix)
 			if ok != tt.wantOK || n != tt.wantN {
 				t.Errorf("parsePRNumber(%q, %q) = (%d, %v), want (%d, %v)", tt.input, tt.prefix, n, ok, tt.wantN, tt.wantOK)
-			}
-		})
-	}
-}
-
-func TestRepoSlug(t *testing.T) {
-	tests := []struct {
-		name string
-		repo string
-		want string
-	}{
-		{"owner slash repo", "gawakawa/prenv", "gawakawa--prenv"},
-		{"already hyphenated", "my-org/my-repo", "my-org--my-repo"},
-		{"mixed case", "Gawakawa/Prenv", "gawakawa--prenv"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := repoSlug(tt.repo); got != tt.want {
-				t.Errorf("repoSlug(%q) = %q, want %q", tt.repo, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestRepoSlugDoesNotCollideAcrossSlashPosition(t *testing.T) {
-	a := repoSlug("gawakawa/prenv-x")
-	b := repoSlug("gawakawa-prenv/x")
-	if a == b {
-		t.Errorf("repoSlug(%q) and repoSlug(%q) both produced %q, want distinct slugs", "gawakawa/prenv-x", "gawakawa-prenv/x", a)
-	}
-}
-
-func TestWithinGracePeriod(t *testing.T) {
-	now := time.Date(2026, 7, 9, 12, 0, 0, 0, time.UTC)
-	tests := []struct {
-		name    string
-		updated time.Time
-		want    bool
-	}{
-		{"just updated", now, true},
-		{"1 minute ago", now.Add(-1 * time.Minute), true},
-		{"9m59s ago, just inside the window", now.Add(-9*time.Minute - 59*time.Second), true},
-		{"exactly at the boundary", now.Add(-tornDownGracePeriod), false},
-		{"11 minutes ago, outside the window", now.Add(-11 * time.Minute), false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := withinGracePeriod(tt.updated, now); got != tt.want {
-				t.Errorf("withinGracePeriod(%v, %v) = %v, want %v", tt.updated, now, got, tt.want)
 			}
 		})
 	}

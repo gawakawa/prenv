@@ -53,14 +53,6 @@ func sanitizeSlugPart(s string) string {
 	return strings.ToLower(nonAlnumRun.ReplaceAllString(s, "-"))
 }
 
-// withinGracePeriod reports whether updated is recent enough that the
-// tfstate object it belongs to was touched very recently — either because a
-// deploy just started or a teardown just finished, per the tornDownGracePeriod
-// comment on listPrenvsFromTfstate.
-func withinGracePeriod(updated, now time.Time) bool {
-	return updated.After(now.Add(-tornDownGracePeriod))
-}
-
 func parsePRNumber(name, prefix string) (int, bool) {
 	rest, ok := strings.CutPrefix(name, prefix)
 	if !ok {
@@ -168,7 +160,16 @@ func listPrenvsFromTfstate(ctx context.Context, client *storage.Client, bucket, 
 	}
 
 	prefix := repo + "/pr/"
-	it := client.Bucket(bucket).Objects(ctx, &storage.Query{Prefix: prefix})
+	query := &storage.Query{
+		Prefix: prefix,
+		// Matches "<prefix><N>/default.tfstate" server-side; * excludes "/",
+		// so this can't also match nested objects like backup tfstates.
+		MatchGlob: prefix + "*/" + tfstateObjectName,
+	}
+	if err := query.SetAttrSelection([]string{"Name", "Updated"}); err != nil {
+		return nil, err
+	}
+	it := client.Bucket(bucket).Objects(ctx, query)
 
 	now := time.Now()
 	prenvs := []Prenv{}
@@ -180,23 +181,20 @@ func listPrenvsFromTfstate(ctx context.Context, client *storage.Client, bucket, 
 		if err != nil {
 			return nil, err
 		}
-		if !strings.HasSuffix(attrs.Name, "/"+tfstateObjectName) {
-			continue
-		}
 		rest := strings.TrimPrefix(attrs.Name, prefix)
 		seg, _, ok := strings.Cut(rest, "/")
 		if !ok {
 			continue
 		}
-		n, err := strconv.Atoi(seg)
-		if err != nil {
+		n, ok := parsePRNumber(seg, "")
+		if !ok {
 			continue
 		}
 		if liveSet[n] {
 			continue
 		}
 		status := "torn_down"
-		if withinGracePeriod(attrs.Updated, now) {
+		if attrs.Updated.After(now.Add(-tornDownGracePeriod)) {
 			status = "pending"
 		}
 		prenvs = append(prenvs, Prenv{
