@@ -73,12 +73,13 @@ func parsePRNumber(name, prefix string) (int, bool) {
 	return n, true
 }
 
-func parseCommitSHA(image string) string {
-	if strings.Contains(image, "@") {
-		return ""
-	}
-	if i := strings.LastIndex(image, ":"); i > strings.LastIndex(image, "/") {
-		return image[i+1:]
+// containerEnv returns the value of the named environment variable on c, or
+// "" if unset.
+func containerEnv(c *runpb.Container, name string) string {
+	for _, e := range c.GetEnv() {
+		if e.GetName() == name {
+			return e.GetValue()
+		}
 	}
 	return ""
 }
@@ -105,10 +106,10 @@ func toPrenv(svc *runpb.Service, prefix string) (Prenv, bool) {
 		return Prenv{}, false
 	}
 
-	var image string
+	var commitSHA string
 	for _, c := range svc.GetTemplate().GetContainers() {
 		if c.GetName() == "backend" {
-			image = c.GetImage()
+			commitSHA = containerEnv(c, "COMMIT_SHA")
 			break
 		}
 	}
@@ -118,7 +119,7 @@ func toPrenv(svc *runpb.Service, prefix string) (Prenv, bool) {
 		Name:      base,
 		URL:       svc.GetUri(),
 		Status:    mapStatus(svc.GetTerminalCondition().GetState()),
-		CommitSHA: parseCommitSHA(image),
+		CommitSHA: commitSHA,
 		UpdatedAt: svc.GetUpdateTime().AsTime().Format(time.RFC3339),
 	}, true
 }

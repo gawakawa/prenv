@@ -82,23 +82,19 @@ func TestWithinGracePeriod(t *testing.T) {
 	}
 }
 
-func TestParseCommitSHA(t *testing.T) {
-	tests := []struct {
-		name  string
-		image string
-		want  string
-	}{
-		{"tag", "asia-northeast1-docker.pkg.dev/proj/repo/app:abc1234", "abc1234"},
-		{"digest", "asia-northeast1-docker.pkg.dev/proj/repo/app@sha256:deadbeef", ""},
-		{"no tag", "asia-northeast1-docker.pkg.dev/proj/repo/app", ""},
-		{"host port no tag", "localhost:5000/app", ""},
+func TestContainerEnv(t *testing.T) {
+	c := &runpb.Container{
+		Env: []*runpb.EnvVar{
+			{Name: "PORT", Values: &runpb.EnvVar_Value{Value: "8081"}},
+			{Name: "COMMIT_SHA", Values: &runpb.EnvVar_Value{Value: "abc1234"}},
+		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := parseCommitSHA(tt.image); got != tt.want {
-				t.Errorf("parseCommitSHA(%q) = %q, want %q", tt.image, got, tt.want)
-			}
-		})
+
+	if got := containerEnv(c, "COMMIT_SHA"); got != "abc1234" {
+		t.Errorf("containerEnv(c, %q) = %q, want %q", "COMMIT_SHA", got, "abc1234")
+	}
+	if got := containerEnv(c, "MISSING"); got != "" {
+		t.Errorf("containerEnv(c, %q) = %q, want empty", "MISSING", got)
 	}
 }
 

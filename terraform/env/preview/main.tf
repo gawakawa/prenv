@@ -35,6 +35,7 @@ module "preview" {
         { name = "DATABASE_URL", value = "postgres://postgres@localhost:5432/app?sslmode=disable" },
         { name = "GCS_BUCKET", value = var.tfstate_bucket },
         { name = "REPO", value = var.repo },
+        { name = "COMMIT_SHA", value = var.commit_sha },
       ]
       depends_on    = ["postgres"]
       startup_probe = { tcp_port = local.backend_port }
