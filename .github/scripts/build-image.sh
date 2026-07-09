@@ -24,18 +24,26 @@ fi
 # of CONTEXT). Uploading a tarball also bypasses .gcloudignore, giving us
 # exact control over what's shipped.
 tarball=$(mktemp --suffix=.tar.gz)
-trap 'rm -f "$tarball"' EXIT
+uncompressed=$(mktemp --suffix=.tar)
+trap 'rm -f "$tarball" "$uncompressed"' EXIT
 
 # Entries keep their repo-relative paths so cloudbuild.yaml's
 # `docker buildx build "$CONTEXT" -f "$DOCKERFILE"` (both /workspace-relative)
 # still resolves after extraction. CONTEXT's own .dockerignore (if any) is
 # honored here too — otherwise e.g. frontend/node_modules would ride along
-# despite never being COPYed into the image.
+# despite never being COPYed into the image. Packed in two stages, CONTEXT
+# then DOCKERFILE appended separately, because tar's --exclude-from applies
+# to the whole invocation rather than just the entry beside it — a single
+# `tar ... --exclude-from=... "$CONTEXT" "$DOCKERFILE"` call would risk
+# silently dropping DOCKERFILE if a future .dockerignore pattern happens to
+# match part of its path too.
 exclude_args=()
 if [ -f "$CONTEXT/.dockerignore" ]; then
   exclude_args+=(--exclude-from="$CONTEXT/.dockerignore")
 fi
-tar -czf "$tarball" -C . "${exclude_args[@]}" "$CONTEXT" "$DOCKERFILE"
+tar -cf "$uncompressed" -C . "${exclude_args[@]}" "$CONTEXT"
+tar -rf "$uncompressed" -C . "$DOCKERFILE"
+gzip -c "$uncompressed" >"$tarball"
 
 # --gcs-source-staging-dir must be explicit: gcloud's auto-detected staging
 # path fails with "forbidden from accessing the bucket" when the caller is a
