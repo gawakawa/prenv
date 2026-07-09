@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"strings"
 
 	run "cloud.google.com/go/run/apiv2"
 	"cloud.google.com/go/storage"
@@ -70,6 +71,9 @@ func main() {
 	}
 	gcsBucket := os.Getenv("GCS_BUCKET")
 	repo := os.Getenv("REPO")
+	if !strings.Contains(repo, "/") {
+		log.Fatalf("REPO must be in OWNER/REPO form, got %q", repo)
+	}
 	runningPrefix := repoSlug(repo) + "-pr-"
 
 	http.HandleFunc("GET /api/messages", func(w http.ResponseWriter, r *http.Request) {
