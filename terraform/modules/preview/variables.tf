@@ -36,14 +36,8 @@ variable "containers" {
     Application containers to run inside the preview service. Exactly one
     container must set `port` (Cloud Run ingress). Every name listed in
     another container's `depends_on` must belong to a container with a
-    `startup_probe` — Cloud Run rejects the deploy with a 400 otherwise —
-    or (when `enable_db_sidecar = true`) be the built-in `postgres` sidecar.
-
-    When `enable_db_sidecar = true`, a Postgres container named `postgres`
-    listens on `localhost:5432` with database `app`, user `postgres`, and no
-    password. Wire it explicitly on the container that needs it:
-      env        = [{ name = "DATABASE_URL", value = "postgres://postgres@localhost:5432/app?sslmode=disable" }]
-      depends_on = ["postgres"]
+    `startup_probe` — Cloud Run rejects the deploy with a 400 otherwise.
+    `volume_mounts` references entries in `var.volumes` by name.
   EOT
   type = list(object({
     name              = string
@@ -61,6 +55,10 @@ variable "containers" {
       timeout_seconds       = optional(number, 3)
       failure_threshold     = optional(number, 24)
     }))
+    volume_mounts = optional(list(object({
+      name       = string
+      mount_path = string
+    })), [])
   }))
 
   validation {
@@ -73,21 +71,20 @@ variable "containers" {
       for c in var.containers : alltrue([
         for dep in c.depends_on :
         contains([for d in var.containers : d.name if d.startup_probe != null], dep)
-        || (var.enable_db_sidecar && dep == "postgres")
       ])
     ])
-    error_message = "Every `depends_on` target must define `startup_probe` (or be the built-in `postgres` sidecar when enable_db_sidecar = true)."
+    error_message = "Every `depends_on` target must define `startup_probe`."
   }
 }
 
-variable "enable_db_sidecar" {
-  description = "Run a Postgres sidecar container (name `postgres`, localhost:5432, database `app`) alongside the application containers."
-  type        = bool
-  default     = true
-}
-
-variable "db_image" {
-  description = "Postgres sidecar image. Ignored when enable_db_sidecar = false."
-  type        = string
-  default     = "postgres:18-alpine"
+variable "volumes" {
+  description = "Volumes shared across containers. `containers[*].volume_mounts` reference these by name."
+  type = list(object({
+    name = string
+    empty_dir = optional(object({
+      medium     = string
+      size_limit = string
+    }))
+  }))
+  default = []
 }

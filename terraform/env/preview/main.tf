@@ -15,7 +15,13 @@ module "preview" {
   region     = var.region
   pr_number  = var.pr_number
   repo       = var.repo
-  db_image   = local.db_image
+
+  volumes = [
+    {
+      name      = "pgdata"
+      empty_dir = { medium = "MEMORY", size_limit = "256Mi" }
+    },
+  ]
 
   containers = [
     {
@@ -37,8 +43,21 @@ module "preview" {
         { name = "REPO", value = var.repo },
         { name = "COMMIT_SHA", value = var.commit_sha },
       ]
-      depends_on    = ["postgres"]
+      depends_on    = ["db"]
       startup_probe = { tcp_port = local.backend_port }
+    },
+    {
+      name  = "db"
+      image = local.db_image
+      env = [
+        { name = "POSTGRES_DB", value = "app" },
+        { name = "POSTGRES_HOST_AUTH_METHOD", value = "trust" },
+      ]
+      startup_cpu_boost = false
+      startup_probe     = { tcp_port = 5432 }
+      volume_mounts = [
+        { name = "pgdata", mount_path = "/var/lib/postgresql" },
+      ]
     },
   ]
 }

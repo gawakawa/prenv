@@ -63,8 +63,9 @@ Copy `templates/main.tf`, `templates/variables.tf`, `templates/versions.tf`,
 `main.tf`'s `containers` list to describe this repo's application — see
 `terraform/modules/preview/README.md` in prenv for the schema and validation
 rules (exactly one container needs `port`; every `depends_on` target needs a
-`startup_probe`). The template sets `enable_db_sidecar = false`; flip it to
-`true` only if the app needs the built-in Postgres sidecar.
+`startup_probe`). The template includes a `db` container and `volumes` block
+(defaulting to Postgres) by default; remove both if the app doesn't use a DB,
+or swap the image for a different engine.
 
 ## Manual steps not covered
 

@@ -15,14 +15,14 @@ PR ごとに Cloud Run 上へ隔離されたプレビュー環境を作り、PR 
 
 プレビューは 1 つの Cloud Run マルチコンテナサービス。
 ingress = `frontend`(SPA + `/api/*` → `localhost:8081` プロキシ)、
-サイドカー = `backend`(PORT=8081)+ `postgres`(5432)。
+サイドカー = `backend`(PORT=8081)+ `db`(5432)。
 
 IAP Cookie はホストスコープなのでクロスオリジン呼び出し不可 → 同一オリジン必須。
 Cloud Run は `PORT` を ingress にのみ注入するため、backend は `PORT=8081` を明示。
 
 ## DB
 
-DB が必要なアプリは module 組み込みの Postgres sidecar でのみ提供する。
+DB が必要なアプリは `containers` に DB sidecar を宣言する形でのみ提供する。
 ephemeral なプレビュー環境ごとに Cloud SQL 等の永続インスタンスを用意するのは
 コストに見合わない。
 
