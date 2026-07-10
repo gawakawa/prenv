@@ -47,6 +47,45 @@ resource "google_storage_bucket" "tfstate" {
   depends_on = [google_project_service.core]
 }
 
+# Cloud Run's default runtime identity reads tfstate objects to discover PR
+# numbers for previews that have been torn down (see
+# backend/monitoring.go's listPrenvsFromTfstate, which calls Objects() — a
+# storage.objects.list operation). This identity is shared by every onboarded
+# repository's preview services, so ideally this grant would be restricted to
+# each repository's own tfstate prefix. That isn't possible here: GCS
+# evaluates storage.objects.list at the bucket level, so a resource.name
+# condition never matches and silently denies the whole list operation
+# (Google's own IAM conditions docs: "you cannot use the resource.name
+# condition attribute to restrict object listing access to a subset of
+# objects in the bucket").
+#
+# legacyBucketReader rather than objectViewer: this bucket also holds this
+# module's own state (env/pr/base), which is on the same shared grant since
+# it can't be scoped by prefix. objectViewer includes storage.objects.get,
+# which would let any onboarded repo's preview container read that state —
+# including the IAP OAuth client secret it stores. legacyBucketReader grants
+# storage.objects.list without storage.objects.get, which is all
+# listPrenvsFromTfstate needs (it only reads object name/Updated metadata,
+# never object contents).
+resource "google_storage_bucket_iam_member" "cloudrun_runtime_tfstate_reader" {
+  bucket = google_storage_bucket.tfstate.name
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${data.google_project.this.number}-compute@developer.gserviceaccount.com"
+}
+
+# Cloud Run's default runtime identity also calls ListServices (see
+# backend/monitoring.go's listRunningPrenvs) to discover currently running
+# previews. Granted explicitly rather than relying on the legacy Editor role
+# some projects auto-grant to this service account. This is app-level
+# permission, which normally belongs in env/preview, but this identity is
+# shared project-wide — granting it per-PR would let any single PR's destroy
+# revoke it for every other running preview.
+resource "google_project_iam_member" "cloudrun_runtime_run_viewer" {
+  project = var.project_id
+  role    = "roles/run.viewer"
+  member  = "serviceAccount:${data.google_project.this.number}-compute@developer.gserviceaccount.com"
+}
+
 resource "google_artifact_registry_repository" "preview" {
   project       = var.project_id
   location      = var.region

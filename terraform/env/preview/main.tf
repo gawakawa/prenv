@@ -39,6 +39,9 @@ module "preview" {
       env = [
         { name = "PORT", value = tostring(local.backend_port) },
         { name = "DATABASE_URL", value = "postgres://postgres@localhost:5432/app?sslmode=disable" },
+        { name = "GCS_BUCKET", value = var.tfstate_bucket },
+        { name = "REPO", value = var.repo },
+        { name = "COMMIT_SHA", value = var.commit_sha },
       ]
       depends_on    = ["db"]
       startup_probe = { tcp_port = local.backend_port }

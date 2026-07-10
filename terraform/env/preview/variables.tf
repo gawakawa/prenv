@@ -24,3 +24,14 @@ variable "images" {
   type        = map(string)
   default     = {}
 }
+
+variable "tfstate_bucket" {
+  description = "GCS bucket holding per-PR Terraform state. Read by the backend container to discover PR numbers for previews that have been torn down."
+  type        = string
+}
+
+variable "commit_sha" {
+  description = "Full Git commit SHA deployed, passed in by CI. Empty on teardown, where no build happens. Exposed to the backend container so the dashboard can link to the exact commit — image tags are content-hashes, not commit SHAs."
+  type        = string
+  default     = ""
+}

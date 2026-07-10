@@ -146,6 +146,8 @@ jobs:
           TF_VAR_pr_number: ${{ inputs.pr }}
           TF_VAR_repo: ${{ steps.repo.outputs.repo }}
           TF_VAR_images: ${{ steps.images.outputs.images_json }}
+          TF_VAR_tfstate_bucket: ${{ vars.GCS_BUCKET }}
+          TF_VAR_commit_sha: ${{ inputs.head_sha }}
         run: |
           tofu apply -auto-approve
 

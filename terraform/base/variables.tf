@@ -57,14 +57,3 @@ variable "iap_members" {
     error_message = "iap_members must not be empty — at least one member must be granted access, otherwise all preview environments will return IAP 403."
   }
 }
-
-variable "iap_oauth_client_id" {
-  description = "IAP custom OAuth client ID (created manually in Console). Stored in Secret Manager and bound to IAP via `gcloud iap settings set`."
-  type        = string
-}
-
-variable "iap_oauth_client_secret" {
-  description = "IAP custom OAuth client secret (created manually in Console)."
-  type        = string
-  sensitive   = true
-}

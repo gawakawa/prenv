@@ -49,7 +49,7 @@ tfstate prefix、イメージ名、Cloud Run サービス名は、共通して o
 
 - tfstate prefix: `<owner>/<repo>/pr/<N>`
 - イメージ名: `<owner>/<repo>/<container>:<content-hash>`
-- Cloud Run サービス名: `<owner>-<repo>-pr-<N>`
+- Cloud Run サービス名: `<owner>--<repo>-pr-<N>`
 
 ## アクセス制御
 

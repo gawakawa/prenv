@@ -1,6 +1,4 @@
-project_id              = "my-project"
-state_bucket_name       = "my-project-tfstate"
-github_repositories     = ["my-org/my-repo"]
-iap_members             = ["user:you@example.com"]
-iap_oauth_client_id     = "PROJECT_NUMBER-xxxx.apps.googleusercontent.com"
-iap_oauth_client_secret = "GOCSPX-xxxx"
+project_id          = "my-project"
+state_bucket_name   = "my-project-tfstate"
+github_repositories = ["my-org/my-repo"]
+iap_members         = ["user:you@example.com"]
