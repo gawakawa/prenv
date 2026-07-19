@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/run v1.21.0
 	cloud.google.com/go/storage v1.63.1
 	github.com/jackc/pgx/v5 v5.10.0
-	google.golang.org/api v0.287.1
+	google.golang.org/api v0.288.0
 )
 
 require (
