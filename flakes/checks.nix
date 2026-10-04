@@ -11,7 +11,7 @@ _: {
         version = "1.0.0";
         inherit src pnpm;
         fetcherVersion = 3;
-        hash = "sha256-LX6+zC9hEbYjlyDXT/mUG6oBmqjB9RYwnqQ9fUVJa4s=";
+        hash = "sha256-nFzeET7ZdkvGEu1n/eyY2hIP8DOkLcJhCN+f+HZqcMg=";
       };
     in
     {
