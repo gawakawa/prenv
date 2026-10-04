@@ -3,7 +3,7 @@ module github.com/gawakawa/prenv/backend
 go 1.26.0
 
 require (
-	cloud.google.com/go/run v1.22.0
+	cloud.google.com/go/run v1.23.0
 	cloud.google.com/go/storage v1.68.0
 	github.com/jackc/pgx/v5 v5.11.0
 	google.golang.org/api v0.298.0
